@@ -7,14 +7,14 @@ It features secure authentication, real-time notifications, merchant dashboards,
 
 ## 🚀 Features
 
-- 🏪 **Multi-Merchant System** — Supports multiple merchants, each with their own dashboard for managing products and orders.  
-- 👥 **User Accounts** — Customer registration, login, and profile management.  
-- 🔍 **Product Browsing & Search** — Search products by category, keyword, or merchant.  
-- 🛍️ **Shopping Cart & Checkout** — Customers can add products to cart, place orders, and view order history.  
-- 📦 **Order Management** — Merchants can view, update, and manage received orders.  
-- ✉️ **Real-Time Notifications** — Email notifications for customers and merchants using **Nodemailer API**.  
-- 💻 **Responsive UI** — Fully responsive design powered by **Bootstrap** and **EJS templates**.  
-- ☁️ **Cloud Deployment** — Hosted on **Render** with **MongoDB Atlas** for database management.  
+-  **Multi-Merchant System** — Supports multiple merchants, each with their own dashboard for managing products and orders.  
+-  **User Accounts** — Customer registration, login, and profile management.  
+-  **Product Browsing & Search** — Search products by category, keyword, or merchant.  
+-  **Shopping Cart & Checkout** — Customers can add products to cart, place orders, and view order history.  
+-  **Order Management** — Merchants can view, update, and manage received orders.  
+-  **Real-Time Notifications** — Email notifications for customers and merchants using **Nodemailer API**.  
+-  **Responsive UI** — Fully responsive design powered by **Bootstrap** and **EJS templates**.  
+-  **Cloud Deployment** — Hosted on **Render** with **MongoDB Atlas** for database management.  
 
 ---
 
@@ -37,7 +37,7 @@ To run **Buy & Sell** locally on your machine:
 
 ```bash
 # Clone the repository
-git clone https://github.com/RaviShankar-coder/Buy-and-Sell.git
+git clone https://github.com/ravishankar7488/Buy-And-Sell-Project
 
 # Navigate into the project directory
 cd Buy-and-Sell
@@ -47,9 +47,8 @@ npm install
 
 # Create a .env file in the root directory and add:
 # MONGODB_URI=<your-mongodb-atlas-connection-string>
-# SESSION_SECRET=<your-session-secret>
 # EMAIL_USER=<your-email-for-nodemailer>
 # EMAIL_PASS=<your-email-password-or-app-password>
 
 # Start the server
-npm start
+node index.js
