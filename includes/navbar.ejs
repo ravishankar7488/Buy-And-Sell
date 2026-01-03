@@ -1,65 +1,179 @@
-<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
-
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-2">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#"><img class="logo" src="/source-images/logo.png"></a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+
+    <!-- LOGO -->
+    <a class="navbar-brand" href="#">
+      <img class="logo" src="/source-images/logo.png">
+    </a>
+
+    <!-- MOBILE SEARCH (ONLY WHEN COLLAPSED) -->
+    <form
+      method="POST"
+      action="/buyandsell/postlogin/search"
+      class="d-flex d-lg-none ms-auto me-2"
+      role="search"
+      style="gap:6px;"
+    >
+      <input
+        name="searchedProduct"
+        class="form-control"
+        type="search"
+        placeholder="Search"
+        required
+        style="height:32px; font-size:14px;"
+      />
+      <button
+        class="btn btn-outline-success"
+        type="submit"
+        style="height:32px; padding:0 10px;"
+      >
+        🔍
+      </button>
+    </form>
+
+    <!-- TOGGLER -->
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNavAltMarkup"
+      aria-controls="navbarNavAltMarkup"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
       <span class="navbar-toggler-icon"></span>
-      
     </button>
-    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+
+    <!-- NAVBAR CONTENT -->
+    <div class="collapse navbar-collapse bg-dark" id="navbarNavAltMarkup">
       <div class="navbar-nav">&nbsp; &nbsp;
-        <a class="nav-link <%= (activePage === 'home') ? 'active' : '' %>" href="/buyandsell/home/<%=user._id%>">&nbsp;&nbsp;Home</a>  
+
+        <!-- HOME -->
+        <a class="nav-link <%= (activePage === 'home') ? 'active' : '' %>"
+           href="/buyandsell/postlogin/home">
+          &nbsp;&nbsp;Home
+        </a>
 
         <% if (user.role === 'merchant') { %>
-          <a class="nav-link <%= (activePage === 'newordersmerchant') ? 'active' : '' %>" href="/buyandsell/merchant/myorders/<%=user._id%>">&nbsp;&nbsp;New orders</a>&nbsp;
-          <a class="nav-link <%= (activePage === 'orderhistorymerchant') ? 'active' : '' %>" href="/buyandsell/merchant/myordershistory/<%=user._id%>">&nbsp;&nbsp;Orders History</a>&nbsp;
-          <a class="nav-link <%= (activePage === 'myproductsmerchant') ? 'active' : '' %>" href="/buyandsell/merchant/myproducts/<%=user._id%>">&nbsp;&nbsp;My Products</a>&nbsp;
-          <a class="nav-link <%= (activePage === 'addproductmerchant') ? 'active' : '' %>" aria-current="page" href="/buyandsell/merchant/addproduct/<%=user._id%>">&nbsp;&nbsp;List Product</a>&nbsp;&nbsp;
 
-          <form method="POST" action="/buyandsell/search/<%=user._id%>" class="d-flex" role="search" style="margin-right: 40px;">
-            <input name="searchedProduct" class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
-            <button class="btn btn-outline-success" type="submit">&nbsp;Search</button>
+          <a class="nav-link <%= (activePage === 'newordersmerchant') ? 'active' : '' %>"
+             href="/buyandsell/postlogin/merchant/myorders">
+            &nbsp;&nbsp;New orders
+          </a>
+
+          <a class="nav-link <%= (activePage === 'orderhistorymerchant') ? 'active' : '' %>"
+             href="/buyandsell/postlogin/merchant/myordershistory">
+            &nbsp;&nbsp;Orders History
+          </a>
+
+          <a class="nav-link <%= (activePage === 'myproductsmerchant') ? 'active' : '' %>"
+             href="/buyandsell/postlogin/merchant/myproducts">
+            &nbsp;&nbsp;My Products
+          </a>
+
+          <a class="nav-link <%= (activePage === 'addproductmerchant') ? 'active' : '' %>"
+             href="/buyandsell/postlogin/merchant/addproduct">
+            &nbsp;&nbsp;List Product
+          </a>
+
+          <!-- DESKTOP SEARCH (MERCHANT) -->
+          <form method="POST"
+                action="/buyandsell/postlogin/search"
+                class="d-none d-lg-flex ms-3"
+                role="search"
+                style="margin-right:40px;">
+            <input name="searchedProduct" class="form-control me-2" type="search" placeholder="Search"/>
+            <button class="btn btn-outline-success" type="submit">Search</button>
           </form>
 
         <% } %>
-        
+
         <% if (user.role === 'customer') { %>
-          <a class="nav-link <%= (activePage === 'myorderscustomer') ? 'active' : '' %>" href="/buyandsell/customer/myorders/<%=user._id%>">&nbsp;&nbsp;My Orders</a>
-          <a class="nav-link <%= (activePage === 'cart') ? 'active' : '' %>" href="/buyandsell/customer/getcart/<%=user._id%>">&nbsp;&nbsp;Cart </a>
 
+          <a class="nav-link <%= (activePage === 'myorderscustomer') ? 'active' : '' %>"
+             href="/buyandsell/postlogin/customer/myorders">
+            &nbsp;&nbsp;My Orders
+          </a>
 
-          <form method="POST" action="/buyandsell/search/<%=user._id%>" class="d-flex" role="search" style="margin-right: 40px;">
-            &nbsp;&nbsp;&nbsp;&nbsp;<input name="searchedProduct" class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
-            <button class="btn btn-outline-success" type="submit">&nbsp;&nbsp;Search</button>
+          <a class="nav-link <%= (activePage === 'cart') ? 'active' : '' %>"
+             href="/buyandsell/postlogin/customer/getcart">
+            &nbsp;&nbsp;Cart
+          </a>
+
+          <!-- DESKTOP SEARCH (CUSTOMER) -->
+          <form method="POST"
+                action="/buyandsell/postlogin/search"
+                class="d-none d-lg-flex ms-3"
+                role="search"
+                style="margin-right:40px;">
+            <input name="searchedProduct" class="form-control me-2" type="search" placeholder="Search"/>
+            <button class="btn btn-outline-success" type="submit">Search</button>
           </form>
-
-          
-
 
         <% } %>
 
-          <div id="cat-in-nav" style="display: flex">
-            <a class="nav-link <%= (activePage === 'men') ? 'active' : '' %>" href="/buyandsell/search/<%=user._id%>/men">&nbsp;&nbsp;&nbsp;Men &nbsp;</a>
-            <a class="nav-link <%= (activePage === 'women') ? 'active' : '' %>" href="/buyandsell/search/<%=user._id%>/women">&nbsp;&nbsp;Women &nbsp;</a>
-            <a class="nav-link <%= (activePage === 'kid') ? 'active' : '' %>" href="/buyandsell/search/<%=user._id%>/kid">&nbsp;&nbsp;Kids&nbsp;</a>
-            <a class="nav-link <%= (activePage === 'lifestyle') ? 'active' : '' %>" href="/buyandsell/search/<%=user._id%>/lifestyle">&nbsp;&nbsp;Lifestyle &nbsp;</a>
-            <a class="nav-link <%= (activePage === 'gadget') ? 'active' : '' %>" href="/buyandsell/search/<%=user._id%>/gadget">&nbsp;&nbsp;Gadgets&nbsp;</a>
-            <a class="nav-link <%= (activePage === 'home appliance') ? 'active' : '' %>" href="/buyandsell/search/<%=user._id%>/home appliance">&nbsp;&nbsp;Home&nbsp;</a>
-            <a class="nav-link <%= (activePage === 'sport') ? 'active' : '' %>" href="/buyandsell/search/<%=user._id%>/sports">&nbsp;Sports&nbsp;&nbsp;</a>
-          </div>
+        <!-- CATEGORIES -->
+        <div id="cat-in-nav" style="display:flex;">
+          <a class="nav-link <%= (activePage === 'men') ? 'active' : '' %>" href="/buyandsell/postlogin/search/men">&nbsp;Men</a>
+          <a class="nav-link <%= (activePage === 'women') ? 'active' : '' %>" href="/buyandsell/postlogin/search/women">&nbsp;Women</a>
+          <a class="nav-link <%= (activePage === 'kid') ? 'active' : '' %>" href="/buyandsell/postlogin/search/kid">&nbsp;Kids</a>
+          <a class="nav-link <%= (activePage === 'lifestyle') ? 'active' : '' %>" href="/buyandsell/postlogin/search/lifestyle">&nbsp;Lifestyle</a>
+          <a class="nav-link <%= (activePage === 'gadget') ? 'active' : '' %>" href="/buyandsell/postlogin/search/gadget">&nbsp;Gadgets</a>
+          <a class="nav-link <%= (activePage === 'sport') ? 'active' : '' %>" href="/buyandsell/postlogin/search/sports">&nbsp;Sports</a>
+        </div>
 
-            <div class="float-nav">
-            <%if(user.isRead){%>
-            <a class="nav-link " href="/buyandsell/customer/getnotification/<%=user._id%>"><img style="position:relative; bottom:2px; margin-right: 14px; width: 40px; height: 40px;" src="https://banner2.cleanpng.com/20231206/oju/transparent-red-bell-black-surface-round-shape-open-hole-smoot-red-bell-with-open-hole-smooth-surface-1710985163124.webp"></a>
-            <%}%>
-            <%if(!(user.isRead)){%>
-            <a class="nav-link " href="/buyandsell/customer/getnotification/<%=user._id%>"><img style="position:relative; bottom:10px; margin-right:10px; width: 50px; height: 50px;" src="https://png.pngtree.com/png-clipart/20220909/original/pngtree-red-ring-bell-notification-icon-png-image_8516685.png"></a>
-            <%}%>
-            <!-- <a class="nav-link" href="/buyandsell"><i class="fa-solid fa-right-from-bracket icons"></i></a> -->
-            <a class="nav-link <%= (activePage === 'account') ? 'active' : '' %>" href="/buyandsell/user/<%=user._id%>"><img style="margin-top: 0px; height: 35px; width: 35px; border-radius: 200px;" src="<%=user.profileImage%>"></a>
-          </div>
+        <!-- RIGHT ICONS -->
+        <div class="float-nav">
+
+          <% if (user.isRead) { %>
+            <a class="nav-link" href="/buyandsell/postlogin/getnotification">
+              <i style="color: rgb(179, 167, 167); margin-top: 3px; margin-right: 10px; font-size: 35px;" class="fa-solid fa-bell"></i>
+            </a>
+          <% } else { %>
+            <a class="nav-link" href="/buyandsell/postlogin/getnotification">
+              <i style="color: rgb(207, 57, 57); margin-top: 3px; margin-right: 10px; font-size: 35px;" class="fa-solid fa-bell"></i>
+            </a>
+          <% } %>
+
+          <a class="nav-link <%= (activePage === 'account') ? 'active' : '' %>"
+             href="/buyandsell/postlogin/user">
+            <img style="height:35px;width:35px;border-radius:50%;"
+                 src="<%= user.profileImage %>">
+          </a>
+
+        </div>
 
       </div>
     </div>
   </div>
 </nav>
+
+<!-- ================= CSS ================= -->
+<style>
+  .navbar .nav-link {
+    color: #e2dada !important;
+    font-weight: 350;
+  }
+
+  .navbar .nav-link:hover {
+    background-color: rgb(255, 255, 255);
+    color: black !important;
+    opacity: 0.85;
+  }
+
+  .navbar .nav-link.active {
+    font-weight: 300;
+    color: black !important;
+  }
+
+  .navbar-collapse.bg-dark {
+    background-color: #212529 !important;
+  }
+
+  /* Hide desktop search forms on mobile */
+  @media (max-width: 991px) {
+    .navbar form[role="search"].d-none.d-lg-flex {
+      display: none !important;
+    }
+  }
+</style>

@@ -24,8 +24,8 @@ width: 24rem !important;
   background-color: white !important;
 }
 .nav-link.active {
-  color: #fff !important;
-  background-color: #ff5722;
+  color: #030303 !important;
+  background-color: #ffffff;
   border-radius: 5px;
   transition: color 0.2s, background 0.6s;
 }

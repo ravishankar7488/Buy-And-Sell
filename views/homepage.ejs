@@ -1,194 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" type="image/png" href="/source-images/logo.png">
-  <link rel="stylesheet" href="/css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+      integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  <title>Buy & Sell</title>
+
   <style>
-
-
-    .navbar{
-  height: 5rem;
-  background-color: white;
-}
     .cards{
-  max-width: 100%;
+  max-width: 80%;
   margin: auto;
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-evenly;
-  margin-top: 5px;
+  justify-content: space evenly;
 }
-.login-form-control{
-  margin: 40px 20px;
-  margin-right : 20px;
-  max-width: 27rem;
-  height: 3rem;
-}
+
 .card-img, .card-img-bottom, .card-img-top{
   width: 100%;
   height: 425px;
 }
-    #content{
-      max-width:100%;
-      display:flex;
-    }
-    #products{
-      width: 75%;
-      margin-left:0px;
-      background-color: rgb(240, 240, 231);
-    }
-  .login-signup-buttons{
-    /* border: 5px solid rgb(32, 226, 32); */
-    border-radius: 5px;
-    display: flex;
-    position: absolute;
-    right: 20px;
-  }
-  .login-signup-buttons:hover{
-    background-color: rgb(32, 226, 32);
-    font: white;
-    transition: background-color 0.6s;
-  }
-    .banner {
-  width: 100%;        /* Makes the banner span the full width of the page */
-  height: auto;       /* Maintains the aspect ratio */
-  max-height: 400px;  /* Optional: limits banner height */
-  object-fit: stretch;  /* Ensures the image covers the space nicely */
-}
-    #main-div{
-      max-width: 30%;
-      margin: auto;
-      /* background-color: grey; */
-      margin-top: 50px;
-      border-radius: 10px;
-         padding:2rem;
-    }
-    #internal-div{
-      margin:auto
-    }
-    .loginform{
-      width:25%;
-      height: 30rem;
-      position: sticky;
-      top: 5 rem;
-      background-color:rgb(255, 255, 255);
-    }
 
-  @media (max-width: 600px) {
+  .navbar {
+    min-height: 70px;
+  }
 
-  #content {
-    flex-direction: column;
+  /* Search input width on desktop */
+  @media (min-width: 992px) {
+    .search-input {
+      max-width: 250px; /* Adjust this width as you like */
+    }
   }
-  .loginform {
-    width: 90%;
-    order: -1; /* Moves loginform above products */
-    margin-bottom: 20px;
-    position: static;
-    /* top: auto; */
+
+  /* Adjust search box on mobile */
+  @media (max-width: 576px) {
+    .search-form {
+      margin: 0 5px;
+    }
+    .search-form input {
+      min-width: 0;
+    }
   }
-  #products {
+
+  /* Prevent buttons from wrapping to next line */
+  .navbar .d-flex.flex-nowrap {
+    flex-wrap: nowrap !important;
+  }
+
+  @media (min-width: 992px) {
+    .navbar .collapse.navbar-collapse {
+      display: flex !important;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+    .hero-banner {
+    position: relative;
     width: 100%;
+    height: 60vh; /* 🌟 Taller height for desktop */
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
   }
-}
-  </style>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-LN+7fdVzj6u52u30Kp6M/trliBMCMKTyK833zpbD+pXdCLuTusPj697FH4R/5mcr" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>B&S</title>
+  /* Background image layer */
+  .hero-banner::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+      url("https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D") center center / cover no-repeat;
+    filter: blur(0.2px);
+    transform: scale(1.05); /* ensures no blank edges after blur */
+    z-index: 1;
+  }
+
+  /* Content layer */
+  .hero-banner .container {
+    position: relative;
+    z-index: 2;
+    padding: 1rem;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 992px) {
+    .hero-banner {
+      height: 45vh; /* tablets */
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-banner {
+      height: 40vh;
+    }
+
+    .hero-banner h1 {
+      font-size: 1.75rem;
+    }
+
+    .hero-banner p.lead {
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .hero-banner {
+      height: 30vh;
+    }
+  }
+</style>
 </head>
 <body>
-  <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom sticky-top">
-
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top py-2">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#"><img class="logo" src="/source-images/logo.png"></a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+
+    <!-- Brand -->
+    <a class="navbar-brand me-2" href="/">Buy & Sell</a>
+
+    <!-- Search (always visible) -->
+    <form
+      class="d-flex flex-grow-1 mx-2"
+      action="/buyandsell/login"
+      method="GET"
+      style="max-width: 420px;"
+    >
+      <input
+        class="form-control form-control-sm me-2"
+        type="search"
+        name="query"
+        placeholder="Search..."
+        required
+      />
+      <button class="btn btn-outline-light btn-sm" type="submit">
+        Search
+      </button>
+    </form>
+
+    <!-- Toggler -->
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarNav"
+      aria-controls="navbarNav"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
       <span class="navbar-toggler-icon"></span>
-      
     </button>
-    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
-      <div class="navbar-nav">
-        &nbsp;&nbsp;<a class="nav-link" href="/buyandsell/login">Home</a>  
 
-          &nbsp;<a class="nav-link" href="/buyandsell/login">My Orders</a>&nbsp;
-          <a class="nav-link" href="/buyandsell/login">Cart</a>&nbsp;
-          <a class="nav-link" href="/buyandsell/login">List Product</a>&nbsp;
-          <a class="nav-link" href="/buyandsell/login">Profile</a>&nbsp;
-          <form method="POST" action="/buyandsell/login" class="d-flex" role="search" style="margin-right: 40px;">&nbsp;
-            <input name="searchedProduct" class="form-control me-2" type="search" placeholder="Search" aria-label="Search"/>
-            <button class="btn btn-outline-success" type="submit">Search</button>
-          </form>
-          <a class="nav-link" href="#">Men </a>
-          <a class="nav-link" href="#">&nbsp;Women &nbsp;</a>
-          <a class="nav-link" href="#">&nbsp;Kid &nbsp;</a>
-          <a class="nav-link" href="#">&nbsp;Lifestyle &nbsp;</a>
-          <a class="nav-link" href="#">&nbsp;Gadgets &nbsp;</a>
-          <a class="nav-link" href="#">&nbsp;Home-Appliances &nbsp;</a>
-          <a class="nav-link" href="#">&nbsp;Sports &nbsp;</a>
-
-          <div class="login-signup-buttons">
-            <a class="nav-link" href="/buyandsell/signup">Sign Up</a>
-          </div>
-      </div>
+    <!-- Collapsible Menu -->
+    <div class="collapse navbar-collapse mt-2 mt-lg-0" id="navbarNav">
+      <ul class="navbar-nav ms-auto text-center">
+        <li class="nav-item">
+          <a class="nav-link" href="/buyandsell/login">Login</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/buyandsell/signup_gmail">Signup</a>
+        </li>
+      </ul>
     </div>
+
   </div>
 </nav>
 
 
-  <header>
-    <img src="/source-images/banner.png" class="banner">
-  </header>
-
-  <div id="content">
-    <div id="products">
-      <div class="cards" >
+ 
+<section
+  class="hero-banner text-center text-light d-flex align-items-center justify-content-center"
+>
+  <div class="container">
+    <h1 class="display-4 fw-bold mb-3">Buy Smart. Sell Fast 🛍️</h1>
+    <p class="lead mb-4">
+      Discover amazing deals, sell what you don’t need, and connect with trusted buyers and sellers all in one place..<br />
+        Your marketplace. Your rules. Your profit.
+    </p>
+  </div>
+</section>
+<br>
+ <div class="cards">
     <%products.forEach((product)=>{%>
-    <div class="card" style="width: 19rem; margin:10px">
+    <div class="card" style="width: 18rem; margin: 0px; margin-bottom: 25px;">
   <img src="<%=product.imageurl%>" class="card-img-top" alt="Product Image">
   <div class="card-body" style="background-color: aliceblue;">
-    <h6 class="card-title"><span><%=product.brand%></span>&nbsp; |&nbsp; <%=product.purchase %></h6>
+    <h6 class="card-title"><span><%=product.brand%></span>&nbsp; |&nbsp; <%=product.purchase %> buys</h6>
     <p class="card-title"><%=product.title%></p>
     <p class="card-text"><span><strong>₹ <%=(product.priceafterdiscount).toLocaleString("en-IN")%></strong></span> &nbsp; &nbsp;<span style="text-decoration: line-through; color: grey;">₹ <%=product.price.toLocaleString("en-IN")%></span></p>
-    <!-- <p><i><%=product.tags%></i></p> -->
-    <a href="#" class="btn btn-primary">View Product</a>
+    <a style="background-color: rgb(235, 153, 77) !important;" href="/buyandsell/postlogin/user/viewproduct/<%=product._id%>" class="btn btn-primary">View Product</a>
   </div>
 </div>
   <%})%>
   </div>
-    </div>
-    <div class="loginform" >
-      <form style="text-align: center;" method="POST" action="/buyandsell/login"><br><br>
-        <h3>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Login</h3>
-        <input class="form-control login-form-control" type="text" placeholder="Email: " name="femail" >
-        <input class="form-control login-form-control" type="password" placeholder="Password":  name="fpassword">
-        <a href="/buyandsell/password_recovery" style="margin-bottom: 20px; text-decoration: none;">&nbsp;&nbsp;&nbsp;&nbsp;Forgot Password?</a>
-          <div class="col-12" style="margin-top: 10px;">&nbsp;&nbsp;&nbsp;&nbsp;
-           <button type="submit" class="btn btn-primary">Login</button>&nbsp;&nbsp;
-            <a href="/buyandsell/signup_gmail" class="btn btn-primary">Sign Up</a>
-          </div>
-      </form>
 
-    </div>
-  </div>
+<footer
+  class="bg-dark text-light text-center shadow"
+  style="padding: 15px 0; min-height: 70px"
+>
+  <div class="container d-flex flex-column justify-content-center align-items-center h-100">
 
-  <footer>
-  <hr>
-  <div class="f-info"> 
-    <div class="f-info-socials">
-      <i class="fa-brands fa-square-facebook"></i>
-      <i class="fa-brands fa-square-instagram"></i>
-      <i class="fa-brands fa-linkedin"></i>
+    <!-- Social Icons -->
+    <div class="mb-1">
+      <a
+        href="https://github.com/ravishankar7488?tab=repositories"
+        target="_blank"
+        class="text-light mx-2 fs-5"
+      >
+        <i class="fa-brands fa-github"></i>
+      </a>
+
+      <a
+        href="https://www.instagram.com/_i_m_ravi_pandey/"
+        target="_blank"
+        class="text-light mx-2 fs-5"
+      >
+        <i class="fa-brands fa-square-instagram"></i>
+      </a>
+
+      <a
+        href="https://www.linkedin.com/in/ravi-shankar-pandey7488858345/"
+        target="_blank"
+        class="text-light mx-2 fs-5"
+      >
+        <i class="fa-brands fa-linkedin"></i>
+      </a>
     </div>
-    <div class="f-info-brand">&copy;B&S Private Limited</div>
-    <div class="f-info-links">
-      <a href="/privacy">Privacy</a>
-      <a href="/terms">Terms</a>
+
+    <!-- Brand & Year -->
+    <small class="fw-medium">
+      &copy; <%= new Date().getFullYear() %> B&S Private Limited — Built with ❤️
+      using Express & EJS
+    </small>
+
+    <!-- Links -->
+    <div class="mt-1">
+      <a href="/privacy" class="text-secondary text-decoration-none mx-2">
+        Privacy
+      </a>
+      |
+      <a href="/terms" class="text-secondary text-decoration-none mx-2">
+        Terms
+      </a>
     </div>
+
   </div>
-</footer> 
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
-
-<!-- <a href="/buyandsell/login" class="btn btn-primary stretched-link">Login</a>
-            <a href="/buyandsell/login" class="btn btn-primary stretched-link">Signup</a> -->

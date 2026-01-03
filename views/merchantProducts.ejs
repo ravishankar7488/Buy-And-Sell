@@ -1,8 +1,5 @@
 <% layout("../layouts/boilerplate")%>
-<body><hr>
-  <!-- <h2><%=user.name%></h2> -->
-<h2>Products listed by you <i class="fa-solid fa-list"></i></h2>
-<hr>
+<body><br>
   <div class="cards">
     <%products.forEach((product)=>{%>
     <div class="card" style="width: 18rem;">
@@ -11,8 +8,8 @@
     <h6 class="card-title"><%=product.brand%> | <%=product.purchase%></h6>
     <p style="line-height: 14px;"><%=product.title%> | Stock Remains: <%=product.stock%></p>
 <p style="line-height: 14px;" class="card-text"><span><strong>₹ <%=(product.priceafterdiscount).toLocaleString("en-IN")%></strong></span> &nbsp; &nbsp;<span style="text-decoration: line-through; color: grey;">₹ <%=product.price.toLocaleString("en-IN")%></span></p>    <p><i><%=product.tags%></i></p>
-    <a href="/buyandsell/user/viewproduct/<%=product._id%>/<%=user._id%>" class="btn btn-primary">View Product</a>
-    <a href="/buyandsell/merchant/edit/<%=product._id%>/<%=user._id%>" class="btn btn-primary">Edit</a>
+    <a style="background-color: rgb(235, 153, 77) !important;" href="/buyandsell/postlogin/user/viewproduct/<%=product._id%>" class="btn btn-primary">View Product</a>
+    <a href="/buyandsell/postlogin/merchant/edit/<%=product._id%>" class="btn btn-warning">Edit</a>
   </div>
 </div>
   <%})%>

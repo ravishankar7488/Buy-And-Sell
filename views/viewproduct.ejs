@@ -1,71 +1,215 @@
-<% layout("../layouts/boilerplate")%>
-<body>
-  <div class="card" style="width: 25rem; margin: auto;">
-    <img src="<%=product.imageurl%>" class="card-img-top" alt="Product Image">
-    <div class="card-body">
-    <h5 class="card-title"><%=product.brand%></h5>
-    <p class="card-title"><%=product.title%></p>
-    <p class="card-text"><span><strong>₹ <%=(product.priceafterdiscount).toLocaleString("en-IN")%></strong></span> &nbsp; &nbsp;<span style="text-decoration: line-through; color: grey;">₹ <%=product.price.toLocaleString("en-IN")%></span></p>
-    <hr>
-    <p class="card-text"><%=product.description%></p>
-    <hr>
-    <p><i><%=product.tags%></i></p>
+<% layout("../layouts/boilerplate") %>
 
-    <% if (user.role === 'customer') { %>
-      <% if (product.stock<1) { %>
-        <a href="#" class="btn btn-danger" style="pointer-events: none; text-decoration: line-through; opacity: 0.6;  ">Out of Stock</a>
-      <% } %>
-      <% if (product.stock>0) { %>
-      <!-- <a href="/buyandsell/customer/buy/<%=product._id%>/<%=user._id%>" class="btn btn-primary">Buy</a> -->
-      <a href="/buyandsell/customer/confirmation/buy/<%=product._id%>/<%=user._id%>" class="btn btn-info">Buy</a>
-      <% } %>
-      <a href="/buyandsell/customer/addtocart/<%=product._id%>/<%=user._id%>" class="btn btn-warning">Add To Cart</a>
-    <% } %>
+<style>
+  /* ===== PRODUCT PAGE STYLES ===== */
 
-     <% if (user.role === 'merchant') { %>
-      <a href="#" class="btn btn-success" style="pointer-events: none; text-decoration: line-through; opacity: 0.6;  ">Buy</a>
-      <a href="#" class="btn btn-warning" style="pointer-events: none; text-decoration: line-through; opacity: 0.6;">Add To Cart</a>
-    <% } %>
-    
-  </div>
-</div>
+  .product-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 0 15px;
+  }
 
-<hr><h5 style="text-align: center;">Comments</h5>
-<%if(user.role==='customer'){%>
-<div class="card">
-  <div class="card-body">
-    <form method="POST" action="/buyandsell/addcomment/<%=user._id%>/<%=product._id%>/<%=user.name%>" style="display: flex"><input name="comment" style="width: 100%; height: 60px; border-radius: 5px; border: 2px solid pink; font-size: 20px; font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;" placeholder="&nbsp;Write a comment..">&nbsp;<button style="border-radius: 5px; border: 2px solid greenyellow; height: 60px;">Comment</button></form>
-  </div>
-</div><hr>
-<%}%>
+  .product-section {
+    flex: 2;
+  }
 
- <%reviews.forEach((review)=>{%>
-  <% if(review.reviewerId.toString() === user._id.toString()){ %><br>
-    <div class="card">
-  <h5 class="card-header"><%=review.createdAt%></h5>
-  <div class="card-body" style="background-color: #ebebeb;">
-    <h5 class="card-title"><%=review.reviewerName%></h5>
-    <p class="card-text"><%=review.comment%></p>
-    <div style="display: flex">
-      <!-- <a href="#" class="card-link"><button>Edit</button></a> &nbsp; -->
-      <form method="POST" action="/buyandsell/deletecomment/<%=user._id%>/<%=product._id%>/<%=review._id%>?_method=DELETE"><button>Delete</button></form>
+  .comments-section {
+    flex: 1;
+  }
+
+  /* ===== PRODUCT CARD ===== */
+  .product-card {
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    overflow: hidden;
+    background: #fff;
+    transition: transform 0.2s;
+  }
+
+  .product-img {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .price-now {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a73e8;
+  }
+
+  .price-old {
+    text-decoration: line-through;
+    color: #888;
+    font-size: 1rem;
+  }
+
+  .tag-chip {
+    display: inline-block;
+    background: #f1f1f1;
+    color: #333;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    margin-top: 6px;
+  }
+
+  .action-btn {
+    border-radius: 30px;
+    padding: 8px 20px;
+    font-weight: 600;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+
+  /* ===== COMMENTS ===== */
+  .comment-box textarea {
+    resize: none;
+    border-radius: 10px;
+    border: 2px solid #1a73e8;
+    font-size: 16px;
+    padding: 10px;
+  }
+
+  .comment-card {
+    border-radius: 12px;
+    border: none;
+    background: #f9f9f9;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 15px;
+  }
+
+  .comment-header {
+    font-size: 0.8rem;
+    color: #666;
+  }
+
+  .comments-section h4 {
+    margin-bottom: 20px;
+    font-weight: bold;
+    color: #333;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 992px) {
+    .product-wrapper {
+      flex-direction: column;
+    }
+
+    .product-section,
+    .comments-section {
+      flex: 1;
+      max-width: 100%;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .product-img {
+      max-height: 250px;
+    }
+
+    .comment-box textarea {
+      font-size: 14px;
+    }
+  }
+
+</style>
+
+<div class="product-wrapper">
+
+  <!-- ===== PRODUCT SECTION ===== -->
+  <div class="product-section">
+    <div class="card product-card mb-4">
+      <img src="<%= product.imageurl %>" class="product-img" alt="Product Image">
+
+      <div class="card-body p-4">
+        <h4 class="fw-bold text-dark"><%= product.brand %></h4>
+        <h6 class="text-muted mb-3"><%= product.title %></h6>
+
+        <p class="mb-2">
+          <span class="price-now">₹ <%= (product.priceafterdiscount).toLocaleString("en-IN") %></span>
+          &nbsp;&nbsp;
+          <span class="price-old">₹ <%= product.price.toLocaleString("en-IN") %></span>
+        </p>
+
+        <hr>
+
+        <p class="text-dark"><%= product.description %></p>
+
+        <div class="mb-3">
+          <span class="tag-chip"><%= product.tags %></span>
+        </div>
+
+        <% if (user.role === 'customer') { %>
+          <% if (product.stock < 1) { %>
+            <button class="btn btn-secondary action-btn me-2" disabled>Out of Stock</button>
+          <% } %>
+
+          <% if (product.stock > 0) { %>
+            <a style="background-color: rgb(235, 153, 77) !important; color: white;"
+               href="/buyandsell/postlogin/customer/confirmation/buy/<%=product._id%>"
+               class="btn btn-info action-btn me-2">Buy Now</a>
+          <% } %>
+
+          <a style="background-color: rgb(98, 180, 228) !important; color: white;"
+             href="/buyandsell/postlogin/customer/addtocart/<%=product._id%>"
+             class="btn btn-warning action-btn">Add to Cart</a>
+        <% } %>
+
+        <% if (user.role === 'merchant') { %>
+          <button class="btn btn-secondary action-btn me-2" disabled>Buy</button>
+          <button class="btn btn-warning action-btn" disabled>Add to Cart</button>
+        <% } %>
+      </div>
     </div>
   </div>
-</div>
-<% } %>
- <%})%>
-<br>
 
- <%reviews.forEach((review)=>{%>
-  <%if(!(review.reviewerId.toString() === user._id.toString())){%><br>
-    <div class="card">
-  <h5 class="card-header"><%=review.createdAt%></h5>
-  <div class="card-body" style="background-color: #ebebeb;">
-    <h5 class="card-title"><%=review.reviewerName%></h5>
-    <p class="card-text"><%=review.comment%></p>
+  <!-- ===== COMMENTS SECTION ===== -->
+  <div class="comments-section">
+    <h4>Comments</h4>
+
+    <% if (user.role === 'customer') { %>
+      <div class="card comment-card mb-3" style="width: 500px; max-width: 500px;">
+        <div class="card-body">
+          <form method="POST"
+                action="/buyandsell/postlogin/addcomment/<%=product._id%>/<%=user.name%>"
+                class="comment-box d-flex gap-2 flex-wrap">
+            <textarea name="comment" class="form-control flex-grow-1" rows="2" placeholder="Write a comment..."></textarea>
+            <button style="background-color: #ddd;" class="btn btn-info">Post</button>
+          </form>
+        </div>
+      </div>
+    <% } %>
+
+    <% reviews.forEach((review) => { %>
+      <div class="card comment-card position-relative" style="width: 500px; max-width: 500px;">
+        <div class="card-body">
+          <div class="comment-header mb-1"><%= review.createdAt %></div>
+          <h6 class="fw-bold"><%= review.reviewerName %></h6>
+          <p class="mb-2"><%= review.comment %></p>
+
+          <% if (review.reviewerId.toString() === user._id.toString()) { %>
+            <form method="POST"
+                  action="/buyandsell/postlogin/deletecomment/<%=product._id%>/<%=review._id%>?_method=DELETE"
+                  class="position-absolute top-0 end-0 m-2">
+              <button type="submit"
+                      class="btn btn-sm btn-outline-danger p-1"
+                      style="font-weight:bold; font-size:1rem; line-height:1; border-radius:50%; width:30px; height:30px;">
+                &times;
+              </button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+    <% }) %>
   </div>
-</div>
-<%}%>
- <%})%>
 
-</body>
+</div>

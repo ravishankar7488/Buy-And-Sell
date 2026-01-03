@@ -1,7 +1,6 @@
 <% layout("../layouts/boilerplate")%>
 <body>
-<hr>
-  <h3>My Orders</h3><hr>
+  <br>
   <div class="cards">
     <%orders.forEach((order)=>{%>
     <br><br>
@@ -28,13 +27,13 @@
     <li class="list-group-item"><%=order.createdAt%></li>
   </ul>
   <div class="card-body">
-    <a href="/buyandsell/user/viewproduct/<%=order.productId%>/<%=user._id%>" class="card-link"><button>view</button></a>
+    <a href="/buyandsell/postlogin/user/viewproduct/<%=order.productId%>" class="card-link"><button>view</button></a>
     <%if(order.status==='Delivered' || order.status==='Rejected' || order.status==='Canceled By Customer'){ %> 
       <a href="#" class="card-link" style="pointer-events: none; opacity: 0.4;  "><button style="background-color: rgb(230, 79, 79); border-radius: 5px; text-decoration: line-through;">Cancel Order</button></a>
       <% } %>
 
     <%if(!(order.status==='Delivered' || order.status==='Rejected' || order.status==='Canceled By Customer')){ %> 
-      <a href="/buyandsell/user/cancelorder_request/<%=order._id%>/<%=user._id%>" class="card-link"><button style="background-color: rgb(230, 79, 79); border-radius: 5px;">Cancel Order</button></a>
+      <a href="/buyandsell/postlogin/customer/cancelorder_request/<%=order._id%>" class="card-link"><button style="background-color: rgb(230, 79, 79); border-radius: 5px;">Cancel Order</button></a>
     <% } %>
 
     <!-- <a href="#" class="card-link">Another link</a> -->

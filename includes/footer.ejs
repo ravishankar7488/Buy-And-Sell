@@ -1,17 +1,52 @@
+<footer
+  class="bg-dark text-light text-center shadow"
+  style="padding: 15px 0; min-height: 70px"
+>
+  <div class="container d-flex flex-column justify-content-center align-items-center h-100">
 
-<footer>
-  <br>
-  <hr>
-  <div class="f-info"> 
-    <div class="f-info-socials">
-      <a href="https://github.com/ravishankar7488?tab=repositories"><i class="fa-brands fa-github"></i></a>
-      <a href="https://www.instagram.com/_i_m_ravi_pandey/"><i class="fa-brands fa-square-instagram"></i></a>
-      <a href="https://www.linkedin.com/in/ravi-shankar-pandey7488858345/"><i class="fa-brands fa-linkedin"></i></a>
+    <!-- Social Icons -->
+    <div class="mb-1">
+      <a
+        href="https://github.com/ravishankar7488?tab=repositories"
+        target="_blank"
+        class="text-light mx-2 fs-5"
+      >
+        <i class="fa-brands fa-github"></i>
+      </a>
+
+      <a
+        href="https://www.instagram.com/_i_m_ravi_pandey/"
+        target="_blank"
+        class="text-light mx-2 fs-5"
+      >
+        <i class="fa-brands fa-square-instagram"></i>
+      </a>
+
+      <a
+        href="https://www.linkedin.com/in/ravi-shankar-pandey7488858345/"
+        target="_blank"
+        class="text-light mx-2 fs-5"
+      >
+        <i class="fa-brands fa-linkedin"></i>
+      </a>
     </div>
-    <div class="f-info-brand">&copy;B&S Private Limited</div>
-    <div class="f-info-links">
-      <a href="/privacy">Privacy</a>
-      <a href="/terms">Terms</a>
+
+    <!-- Brand & Year -->
+    <small class="fw-medium">
+      &copy; <%= new Date().getFullYear() %> B&S Private Limited — Built with ❤️
+      using Express & EJS
+    </small>
+
+    <!-- Links -->
+    <div class="mt-1">
+      <a href="/privacy" class="text-secondary text-decoration-none mx-2">
+        Privacy
+      </a>
+      |
+      <a href="/terms" class="text-secondary text-decoration-none mx-2">
+        Terms
+      </a>
     </div>
+
   </div>
 </footer>

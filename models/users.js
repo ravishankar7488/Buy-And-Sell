@@ -11,7 +11,11 @@ const userSchema=new Schema({
   isRead: {type:Boolean, default: false},
   contact: {
     pincode: {type:Number, required: true},
-    phone: {type: Number, min: 6000000000, maxlength: 9999999999},
+     phone: {
+  type: String,
+  match: /^[6-9]\d{9}$/,
+  required: true
+},
     address: {type: String, required: true},
     state: {type: String, required: true},
     city: {type: String, required: true}
@@ -19,4 +23,4 @@ const userSchema=new Schema({
   gender: {type: String, required: true},
 })
 const User=mongoose.model("User", userSchema);
-module.exports=User;0
+module.exports=User;

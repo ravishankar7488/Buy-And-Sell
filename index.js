@@ -3,10 +3,19 @@ const app=express();
 const method_override=require("method-override")
 app.use(method_override("_method"));
 app.use(express.urlencoded({extended:true}));
+const cookieParser=require("cookie-parser");
+require('dotenv').config();
 
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
 const session = require('express-session');
+const flash= require("connect-flash")
+const sessions=require("express-session");
+app.use(cookieParser("devil"));
+
+//connect-flash
+app.use(sessions())
+app.use(flash())
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({ secret: 'otp_secret', resave: false, saveUninitialized: true }));
@@ -15,11 +24,13 @@ app.use(session({ secret: 'otp_secret', resave: false, saveUninitialized: true }
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'pravi5653no0987@gmail.com',
-    pass: 'ryhn zvbp tyja vkec'
+    user: process.env.GMAIL,
+    pass: process.env.PASS
   }
 });
 
+const ExpressError= require("./utils/expressError.js");
+const wrapAsync= require("./utils/wrapAsync.js")
 
 const multer  = require('multer')
 const storage = multer.diskStorage({
@@ -42,7 +53,7 @@ main().then(()=>{
 .catch(err => console.log(err));
 
 async function main() {
-  await mongoose.connect('mongodb+srv://pravi5653no0987:Oc6IJ83zpYl2gVyi@cluster0.waryf2v.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0');
+  await mongoose.connect(process.env.MONGO_URI);
   } 
 const User= require("./models/users.js")
 const Product= require("./models/products.js")
@@ -62,429 +73,462 @@ app.set("view engine", "ejs");
 
 
 //routes
-app.get("/", (req,res)=>{
-  Product.find({}).then((products)=>{res.render("homepage.ejs", {products , activePage:"Home", alertMessage: 'Welcome back!' }
-  )}).catch((error)=>{console.log(error)})
-  
-})
-//My account
-app.get("/buyandsell/user/:id", (req,res)=>{
-  let {id}=req.params;
-  User.findById(id).then((user)=>{res.render("myaccount.ejs", {user, activePage:"account"})}).catch((error)=>{res.send(error)})
-})
-//update account
-app.get("/buyandsell/updateprofile/:id", (req,res)=>{
-  let {id}=req.params;
-  User.findById(id).then((user)=>{res.render("updateaccount.ejs", {user, activePage:" "})}).catch((error)=>{console.log(error)})
-});
-app.post("/buyandsell/updateprofile/:id", upload.single('profileImage'), (req,res)=>{
-  let {id}=req.params;
-  let {fname, femail, fphone, flandmark, fpin, fstate, fcity, foldpassword, fnewpassword}= req.body;
-  User.findById(id).then((user)=>{
-    if(user.password !== foldpassword) {
-      return res.send("Old password is incorrect");
-    }
-    user.name = fname || user.name;
-    user.email = femail || user.email;
-    user.contact.phone = fphone || user.contact.phone;
-    user.contact.address = flandmark || user.contact.address;
-    user.contact.pincode = fpin || user.contact.pincode;
-    user.contact.state = fstate || user.contact.state;
-    user.contact.city = fcity || user.contact.city;
-    if(fnewpassword) {
-      user.password = fnewpassword; // Update password if new password is provided
-    }
-    if(req.file) {
-      user.profileImage = "/uploads/profileImages/" + req.file.originalname; // Update profile image if a new file is uploaded
-    }
-    
-    user.save().then((result)=>{res.redirect("/buyandsell/user/"+id,)}).catch((e)=>{    if (e.name === 'ValidationError') {
-      // Handle validation error
-      res.send(e.message);
-    } else {
-      // Handle other errors
-      res.send(e);
-    }})
+app.get("/", wrapAsync(async (req,res)=>{
+  const products = await Product.find({});
+  res.render("homepage.ejs", {products , activePage:"Home"});
+}))
 
-  }).catch((error)=>{console.log(error)})
-})
+
+//Authenication Middlewares
+app.use("/buyandsell/postlogin", wrapAsync( async(req,res,next)=>{
+  id=req.signedCookies.id;
+  let result=await User.findById(id)
+  if(result)next();
+  else{
+    throw new ExpressError(500, "Please Login First 🤷‍♂️")
+  }
+}))
+app.use("/buyandsell/postlogin/merchant", wrapAsync( async(req,res,next)=>{
+  id=req.signedCookies.id;
+  let result=await User.findById(id)
+  if(result.role=="merchant")next();
+  else{
+    throw new ExpressError(500, "ACCESS DENIED")
+  }
+}))
+app.use("/buyandsell/postlogin/customer", wrapAsync( async(req,res,next)=>{
+  id=req.signedCookies.id;
+  let result=await User.findById(id)
+  if(result.role=="customer")next();
+  else{
+    throw new ExpressError(500, "ACCESS DENIED")
+  }
+}))
+
+//My account
+app.get("/buyandsell/postlogin/user", wrapAsync(async (req,res)=>{
+  id=req.signedCookies.id;
+  const user = await User.findById(id);
+  res.render("myaccount.ejs", {user, activePage:"account"});
+}))
+
+//update account
+app.get("/buyandsell/postlogin/updateprofile", wrapAsync(async (req,res)=>{
+  id=req.signedCookies.id;
+  const user = await User.findById(id);
+  res.render("updateaccount.ejs", {user, activePage:" "});
+}));
+
+app.post("/buyandsell/postlogin/updateprofile", upload.single('profileImage'), wrapAsync(async (req,res)=>{
+  id=req.signedCookies.id;
+  const {fname, femail, fphone, flandmark, fpin, fstate, fcity, foldpassword, fnewpassword}= req.body;
+  const user = await User.findById(id);
+  
+  if(user.password !== foldpassword) {
+    return res.send("Old password is incorrect");
+  }
+  user.name = fname || user.name;
+  user.email = femail || user.email;
+  user.contact.phone = fphone || user.contact.phone;
+  user.contact.address = flandmark || user.contact.address;
+  user.contact.pincode = fpin || user.contact.pincode;
+  user.contact.state = fstate || user.contact.state;
+  user.contact.city = fcity || user.contact.city;
+  if(fnewpassword) {
+    user.password = fnewpassword;
+  }
+  if(req.file) {
+    user.profileImage = "/uploads/profileImages/" + req.file.originalname;
+  }
+  
+  const result = await user.save();
+  res.redirect("/buyandsell/postlogin/user");
+}))
 
 //view product
-app.get("/buyandsell/user/viewproduct/:pid/:uid", (req,res)=>{
-  let {pid, uid}=req.params;
-  Product.findById(pid).then((product)=>{
-    User.findById(uid).then((user)=>{
-      Review.find({productId:pid}).sort({ createdAt: -1 }).then((reviews)=>{res.render("viewproduct.ejs", {user, product, reviews, activePage:" "})})}).catch((e)=>{})
-      .then((error)=>{console.log(error)})
-  }).then((error1)=>{console.log(error1)})
-})
+app.get("/buyandsell/postlogin/user/viewproduct/:pid", wrapAsync(async (req,res)=>{
+  const {pid}=req.params;
+  let uid=req.signedCookies.id;
+  const product = await Product.findById(pid);
+  const user = await User.findById(uid);
+  const reviews = await Review.find({productId:pid}).sort({ createdAt: -1 });
+  res.render("viewproduct.ejs", {user, product, reviews, activePage:" "});
+}))
 
 //comment
 // Add
-app.post("/buyandsell/addcomment/:uid/:pid/:uname", (req, res)=>{
-  
-  let {uid, pid, uname}=req.params;
-  let {comment}=req.body;
+app.post("/buyandsell/postlogin/addcomment/:pid/:uname", wrapAsync(async (req, res)=>{
+  const {pid, uname}=req.params;
+  uid=req.signedCookies.id;
+  const {comment}=req.body;
   console.log(uid+" "+pid+" "+comment)
-  let review=new Review({
+  const review = new Review({
     reviewerId:uid,
     productId:pid,
     comment:comment,
     reviewerName:uname
   });
-  review.save().then((result)=>{console.log(result);res.redirect(`/buyandsell/user/viewproduct/${pid}/${uid}`)}).catch((error)=>{console.log(error)})
-})
+  const result = await review.save();
+  console.log(result);
+  res.redirect(`/buyandsell/postlogin/user/viewproduct/${pid}`);
+}))
+
 //delete comment:
-app.delete(("/buyandsell/deletecomment/:uid/:pid/:rid"),(req,res)=>{
-  let {uid, pid, rid}=req.params
-  Review.findByIdAndDelete(rid).then((result)=>{console.log(result);res.redirect(`/buyandsell/user/viewproduct/${pid}/${uid}`)}).catch((error)=>{})
-})
+app.delete(("/buyandsell/postlogin/deletecomment/:pid/:rid"), wrapAsync(async (req,res)=>{
+  const {pid, rid}=req.params
+  uid=req.signedCookies.id;
+  const result = await Review.findByIdAndDelete(rid);
+  console.log(result);
+  res.redirect(`/buyandsell/postlogin/user/viewproduct/${pid}`);
+}))
 
-app.post("/buyandsell/login", (req,res)=>{
-  let {femail, fpassword}=req.body;
+//login
+app.get("/buyandsell/login", wrapAsync( async (req,res)=>{
+  res.render("login.ejs")
+}))
 
-  User.findOne({email:femail})
-  .then((result)=>{
-    if(!result){res.send("User Not Registered")}
-    else{
-      let pw=result.password;
-      if(pw===fpassword){res.redirect("/buyandsell/home/"+result._id)}
-    else{res.send("Password Mismatch");}
+app.post("/buyandsell/login", wrapAsync(async (req,res)=>{
+  const {femail, fpassword}=req.body;
+
+  const result = await User.findOne({email:femail});
+  if(!result){
+    res.send("User Not Registered");
   }
-})
-  .catch((error)=>{res.send(error);});
-}
-)
+  else{
+    const pw=result.password;
+    if(pw===fpassword){
+      res.cookie("id",result._id,{signed:true});
+
+      res.redirect("/buyandsell/postlogin/home");
+    }
+    else{
+      res.send("Password Mismatch.");
+    }
+  }
+}))
+
 //notification:
-app.get("/buyandsell/customer/getnotification/:uid", (req,res)=>{
-  let{uid}=req.params;
-  Notification.find({receiverId:uid}).sort({ createdAt: -1 }).then((notifications)=>{
-    User.findById(uid).then((user)=>{
-      User.findByIdAndUpdate(uid, {isRead:true}).then((u)=>{res.render("shownotifications.ejs", {notifications, user, activePage:"notifications"})}).catch((e)=>{console.log(e)})
-      
-    }).catch((error)=>{console.log(error)})
-  }).catch((err)=>{console.log(err)})
-})
+app.get("/buyandsell/postlogin/getnotification", wrapAsync(async (req,res)=>{
+  let uid=req.signedCookies.id;
+  const notifications = await Notification.find({receiverId:uid}).sort({ createdAt: -1 });
+  const user = await User.findById(uid);
+  await User.findByIdAndUpdate(uid, {isRead:true});
+  res.render("shownotifications.ejs", {notifications, user, activePage:"notifications"});
+}))
+
 //delete Notification:
-app.get(("/buyandsell/deletenotification/:nid/:uid"), (req,res)=>{
-  let {nid, uid}=req.params;
-  Notification.findByIdAndDelete(nid).then((result)=>{res.redirect("/buyandsell/customer/getnotification/"+uid)}).catch((error)=>{})
-})
+app.get(("/buyandsell/postlogin/deletenotification/:nid"), wrapAsync(async (req,res)=>{
+  const {nid}=req.params;
+  let uid=req.signedCookies.id;
+  const result = await Notification.findByIdAndDelete(nid);
+  res.redirect("/buyandsell/postlogin/getnotification");
+}))
 
 //show home page
-app.get("/buyandsell/home/:who", (req,res)=>{
- let {who}=req.params;
- Product.find({}).sort({ createdAt: -1 }).then((products)=>{
-    User.findById(who).then((user)=>{
-      if(user.role==="customer") res.render("customer.ejs",{user, products, activePage:"home"})
-      else if(user.role==="merchant") res.render("merchant.ejs",{user, products, activePage:"home"})
-    }).then((error)=>{})
- }).catch((error1)=>{})
-})
+app.get("/buyandsell/postlogin/home", wrapAsync(async (req,res)=>{
+  let id=req.signedCookies.id;
+  const products = await Product.find({}).sort({ createdAt: -1 });
+  const user = await User.findById(id);
+  if(user.role==="customer") res.render("customer.ejs",{user, products, activePage:"home"})
+  else if(user.role==="merchant") res.render("merchant.ejs",{user, products, activePage:"home"})
+}))
 
 //signup
 // Handle email submission
-app.post('/send-otp', (req, res) => {
+app.post('/send-otp', wrapAsync(async (req, res) => {
   console.log(req.body);
 
   const email = req.body.email;
-  const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000);
 
   req.session.email = email;
   req.session.otp = otp;
 
   const mailOptions = {
-    from: 'pravi5653no0987@gmail.com',
+    from: process.env.GMAIL,
     to: email,
     subject: 'Verification OTP for B&S',
     text: `Thank you for choosing Buy and Sell!
 Your One-Time Password (OTP) is ${otp}. Please enter this code to verify your identity and proceed.
 This code will expire in 5 minutes.
-If you didn’t request this, kindly ignore the message.`
+If you didn't request this, kindly ignore the message.`
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      return res.send(error);
-    }
-    res.render('verify');
+  await new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        reject(error);
+      }
+      resolve(info);
+    });
   });
-});
+  
+  res.render('verify');
+}));
 
 // Handle OTP verification
-app.post('/verify-otp', (req, res) => {
+app.post('/verify-otp', wrapAsync(async (req, res) => {
   const email = req.params.email;
   const userOtp = req.body.otp;
   if (parseInt(userOtp) === req.session.otp) {
-    // res.send(`✅ Registration successful for ${req.session.email}`);
     setTimeout(() => {
-    res.redirect('/buyandsell/signup/'+req.session.email);}, 1000);
+      res.redirect('/buyandsell/signup/'+req.session.email);
+    }, 1000);
   } else {
     res.send('❌ Invalid OTP. Try again.');
   }
-});
+}));
 
-app.get("/buyandsell/signup_gmail", (req,res)=>{
+app.get("/buyandsell/signup_gmail", wrapAsync(async (req,res)=>{
   res.render("signup_gmail.ejs", {activePage:" "});
-});
+}));
 
-app.get("/buyandsell/signup/:email", (req,res)=>{
+app.get("/buyandsell/signup/:email", wrapAsync(async (req,res)=>{
   res.render("signup.ejs", {activePage:" ", email:req.params.email, alertMessage: 'Email verified! Please fill in the details to complete your registration.'});
-})
-app.post("/buyandsell/signup", upload.single('profileImage'), (req,res)=>{
-  let {fname, femail, fpassword, frole, fphone, faddress, fpincode, fstate, fcity, fgender}= req.body;
+}))
+
+app.post("/buyandsell/signup", upload.single('profileImage'), wrapAsync(async (req,res)=>{
+  const {fname, femail, fpassword, frole, fphone, faddress, fpincode, fstate, fcity, fgender}= req.body;
   console.log(req.file)
-  let profileImage = req.file ? "/uploads/profileImages/"+req.file.originalname : "/uploads/profileImages/default-profile.png"; // Handle file upload
-  let user= new User({
-  profileImage: profileImage,
-  gender: fgender,
-  name:fname,
-  email: femail,
-  password: fpassword,
-  role: frole,
-  contact: {state: fstate, city: fcity, pincode: fpincode, phone: fphone, address: faddress},
-  created_at:new Date()
-});
-user.save().then((result)=>{
-  let notification= new Notification({
+  const profileImage = req.file ? "/uploads/profileImages/"+req.file.originalname : "/uploads/profileImages/default-profile.png";
+  const user = new User({
+    profileImage: profileImage,
+    gender: fgender,
+    name:fname,
+    email: femail,
+    password: fpassword,
+    role: frole,
+    contact: {state: fstate, city: fcity, pincode: fpincode, phone: fphone, address: faddress},
+    created_at:new Date()
+  });
+  
+  const result = await user.save();
+  const notification = new Notification({
     senderId: '68806542c7dad51e899c51a9',
     receiverId: result._id,
     message: `Welcome ${result.name}! You are successfully registered on BUY & SELL as a ${result.role} 🙏`
   });
-  notification.save().then((r)=>{res.redirect("/buyandsell/home/"+result._id)})}).catch((e)=>{res.send(e.errmsg);console.log(e)})
-  
-  .catch((error)=>{console.log(error); res.send(error);})
-})
+  await notification.save();
+  res.cookie("id",result._id,{signed:true});
+  res.redirect("/buyandsell/postlogin/home");
+}))
 
 //merchantPages:
 //add product:
-app.get("/buyandsell/merchant/addproduct/:id", (req,res)=>{
- let{id}=req.params;
- User.findById(id).then((user)=>{res.render("addproduct.ejs", {user, activePage:"addproductmerchant"})}).then((error)=>{console.log(error)})
-})
-app.post("/buyandsell/merchant/addproduct/:id", (req,res)=>{
-  let {id}=req.params;
-  let {fbrand, ftitle, fimageurl, fdescription, fstock, fprice, fdiscountedprice, ftags}=req.body;
+app.get("/buyandsell/postlogin/merchant/addproduct", wrapAsync(async (req,res)=>{
+  let id=req.signedCookies.id;
+  const user = await User.findById(id);
+  res.render("addproduct.ejs", {user, activePage:"addproductmerchant"});
+}))
+
+app.post("/buyandsell/postlogin/merchant/addproduct", wrapAsync(async (req,res)=>{
+  let id=req.signedCookies.id;
+  const {fbrand, ftitle, fimageurl, fdescription, fstock, fprice, fdiscountedprice, ftags}=req.body;
   const tagsArray = ftags.split(',').map(tag => tag.trim());
-  let product= new Product({
-  brand: fbrand,
-  title: ftitle,
-  description: fdescription,
-  price: fprice,
-  priceafterdiscount: fdiscountedprice,
-  imageurl: fimageurl,
-  stock: fstock,
-  createdAt:new Date(),
-  sellerId:id,
-  tags:tagsArray
+  const product = new Product({
+    brand: fbrand,
+    title: ftitle,
+    description: fdescription,
+    price: fprice,
+    priceafterdiscount: fdiscountedprice,
+    imageurl: fimageurl,
+    stock: fstock,
+    createdAt:new Date(),
+    sellerId:id,
+    tags:tagsArray
   });
-  product.save().then((result)=>{res.redirect("/buyandsell/home/"+id)}).catch((error)=>{res.send(error);})
-})
+  const result = await product.save();
+  res.redirect("/buyandsell/postlogin/home");
+}))
+
 //my orders merchant
-app.get("/buyandsell/merchant/myorders/:id", (req,res)=>{
-  let {id}= req.params
-  Product.find({sellerId: id}, '_id').then((array)=>{
-    Order.find({productId: { $in: array }}).then((orders)=>{User.findById(id).then((user)=>{res.render("neworders.ejs", {orders, user, activePage:"newordersmerchant"})}).catch((err)=>{console.log(err)})
-      }).catch((error)=>{console.log(error)})
-  })
-  .catch((error1)=>{console.log(error1)})
-})
+app.get("/buyandsell/postlogin/merchant/myorders", wrapAsync(async (req,res)=>{
+  let id=req.signedCookies.id;
+  const array = await Product.find({sellerId: id}, '_id');
+  const orders = await Order.find({productId: { $in: array }});
+  const user = await User.findById(id);
+  res.render("neworders.ejs", {orders, user, activePage:"newordersmerchant"});
+}))
+
 //orderhistory
-app.get("/buyandsell/merchant/myordershistory/:id", (req,res)=>{
-  let {id}= req.params
-  Product.find({sellerId: id}, '_id').then((array)=>{
-    Order.find({productId: { $in: array }}).sort({ createdAt: -1 }).then((orders)=>{User.findById(id).then((user)=>{res.render("merchantorderhistory.ejs", {orders, user, activePage:"orderhistorymerchant"})}).catch((err)=>{console.log(err)})
-      }).catch((error)=>{console.log(error)})
-  })
-  .catch((error1)=>{console.log(error1)})
-})
+app.get("/buyandsell/postlogin/merchant/myordershistory", wrapAsync(async (req,res)=>{
+  let id=req.signedCookies.id;
+  const array = await Product.find({sellerId: id}, '_id');
+  const orders = await Order.find({productId: { $in: array }}).sort({ createdAt: -1 });
+  const user = await User.findById(id);
+  res.render("merchantorderhistory.ejs", {orders, user, activePage:"orderhistorymerchant"});
+}))
 
-app.get("/buyandsell/merchant/vieworder/:cid/:uid/:oid",(req,res)=>{
-  let {cid, uid, oid}=req.params
-  User.findById(cid).then((customer)=>{
-    Order.findById(oid).then((order)=>{
-      User.findById(uid).then((user)=>{
-        res.render("vieworder.ejs", {customer, order, user, activePage:" "})
-      })
-      .catch((error1)=>{console.log(error)})
-      
-    })
-  .catch((error)=>{console.log(error)})}).catch((err)=>{console.log(err)})
-})
-app.post("/buyandsell/merchant/vieworder/updatestatus/:uid/:oid/:cid", (req,res)=>{
-  let {uid, oid, cid}=req.params;
-  let {status}=req.body;
-  Order.findByIdAndUpdate(oid, {status: status,  createdAt: new Date()}).then((result)=>{
-    Order.findById(oid).then((order)=>{
-      if(status==='Rejected'){
-        Product.findById(order.productId).then((product)=>{
-          Product.findByIdAndUpdate(product._id, {stock:product.stock+1, purchase: product.purchase-1}).then((r1)=>{}).catch((e1)=>{})
-        }).catch((e)=>{})
-      }
-      let notification=new Notification({
-      senderId:uid,
-      receiverId:cid,
-      message:`Your Order for product "${order.ordertitle}" has been "${status}"`
-    })
-    notification.save().then((r)=>{
-      User.findByIdAndUpdate(cid, {isRead: false}).then((u)=>{
-        res.redirect("/buyandsell/merchant/myorders/"+uid)
-      }).catch((e)=>{})
-      })
-      .catch((e)=>{console.log(e)})
-    }).catch((error1)=>{console.log(error1)})
-//notification for customer on mail
-User.findById(cid).then((customer)=>{
-const email = customer.email;
-  const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+app.get("/buyandsell/postlogin/merchant/vieworder/:cid/:oid", wrapAsync(async (req,res)=>{
+  const {cid, oid}=req.params;
+  let uid=req.signedCookies.id;
+  const customer = await User.findById(cid);
+  const order = await Order.findById(oid);
+  const user = await User.findById(uid);
+  res.render("vieworder.ejs", {customer, order, user, activePage:" "});
+}))
 
-  req.session.email = email;
-  req.session.otp = otp;
+app.post("/buyandsell/postlogin/merchant/vieworder/updatestatus/:oid/:cid", wrapAsync(async (req,res)=>{
+  const {oid, cid}=req.params;
+  let uid=req.signedCookies.id;
+  const {status}=req.body;
+  
+  const result = await Order.findByIdAndUpdate(oid, {status: status, createdAt: new Date()});
+  const order = await Order.findById(oid);
+  
+  if(status==='Rejected'){
+    const product = await Product.findById(order.productId);
+    await Product.findByIdAndUpdate(product._id, {stock:product.stock+1, purchase: product.purchase-1});
+  }
+  
+  const notification = new Notification({
+    senderId:uid,
+    receiverId:cid,
+    message:`Your Order for product "${order.ordertitle}" has been "${status}"`
+  });
+  
+  await notification.save();
+  await User.findByIdAndUpdate(cid, {isRead: false});
+  
+  //notification for customer on mail
+  const customer = await User.findById(cid);
+  const cemail = customer.email;
 
   const mailOptions = {
-    from: 'pravi5653no0987@gmail.com',
-    to: email,
+    from: process.env.GMAIL,
+    to: cemail,
     subject: 'Order status update',
     text: `Greetings Customer,
-The status of your order "${result.ordertitle}" has been updated as "${status}". To view the order details and manage it, please click the link https://buy-and-sell-project.onrender.com/ to visit our website.
+The status of your order "${order.ordertitle}" has been updated as "${status}". To view the order details and manage it, please click the link https://buy-and-sell-project.onrender.com/ to visit our website.
 Warm regards,
-The B&S Team"
-`
+The B&S Team"`
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      return res.send('Error sending email');
-    }
+  await new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        reject(error);
+      }
+      resolve(info);
+    });
   });
 
-}).catch((e)=>{console.log(e)})//notification for customer on mail
+  res.redirect("/buyandsell/postlogin/merchant/myorders");
+}))
 
-  }).catch((error)=>{console.log(error)})
-})
 //my listed products
-app.get("/buyandsell/merchant/myproducts/:uid", (req, res)=>{
-  let {uid}=req.params;
-  Product.find({ sellerId: uid}).then((products)=>{
-    User.findById(uid).then((user)=>{
-      res.render("merchantProducts.ejs", {user, products, activePage:"myproductsmerchant"})
-    }).catch((error)=>{console.log(error)})
-  }).catch((error1)=>{console.log(error1)})
-})
+app.get("/buyandsell/postlogin/merchant/myproducts", wrapAsync(async (req, res)=>{
+  let uid=req.signedCookies.id;
+  const products = await Product.find({ sellerId: uid});
+  const user = await User.findById(uid);
+  res.render("merchantProducts.ejs", {user, products, activePage:"myproductsmerchant"});
+}))
+
 //edit product
 //get form
-app.get("/buyandsell/merchant/edit/:pid/:uid", (req, res)=>{
-  let {uid, pid}= req.params;
-  User.findById(uid).then((user)=>{
-    Product.findById(pid).then((product)=>{
-      res.render("editform.ejs", {user, product, activePage:" "})
-    }).catch((error)=>{console.log(error)})
-    
-  }).catch((error1)=>{console.log(error1)})
-})
+app.get("/buyandsell/postlogin/merchant/edit/:pid", wrapAsync(async (req, res)=>{
+  const {pid}= req.params;
+  let uid=req.signedCookies.id;
+  const user = await User.findById(uid);
+  const product = await Product.findById(pid);
+  res.render("editform.ejs", {user, product, activePage:" "});
+}))
+
 //update
-app.post("/buyandsell/merchant/edit/:pid/:uid", (req, res)=>{
-  let {uid, pid}= req.params;
-  let {pprice, pstock, ptags}=req.body;
+app.post("/buyandsell/postlogin/merchant/edit/:pid", wrapAsync(async (req, res)=>{
+  const {pid}= req.params;
+  let uid=req.signedCookies.id;
+  const {pprice, pstock, ptags}=req.body;
   const tagsArray = ptags.split(',').map(tag => tag.trim());
-  Product.findOneAndUpdate({_id:pid}, {
+  const result = await Product.findOneAndUpdate({_id:pid}, {
     stock: pstock,
     priceafterdiscount: pprice,
     tags: tagsArray,
-  }).then((result)=>{res.send(result)}).catch((error)=>{res.send(error)})
-})
+  });
+  res.send(result);
+}))
 
 
 //customers
 //my orders customer
-app.get("/buyandsell/customer/myorders/:uid", (req,res)=>{
-  let {uid}=req.params;
-  User.findById(uid).then((user)=>{Order.find({customerId: uid}).sort({ createdAt: -1 })
-  .then((orders)=>{res.render("orderhistory.ejs", {user, orders, activePage:"myorderscustomer"})})
-  .then((error)=>{console.log(error)})
-    })
-  .catch((error)=>{console.log(error)})
-})
+app.get("/buyandsell/postlogin/customer/myorders", wrapAsync(async (req,res)=>{
+  let uid=req.signedCookies.id;
+  const user = await User.findById(uid);
+  const orders = await Order.find({customerId: uid}).sort({ createdAt: -1 });
+  res.render("orderhistory.ejs", {user, orders, activePage:"myorderscustomer"});
+}))
 
 //buy
-app.get("/buyandsell/customer/confirmation/buy/:pid/:uid", (req,res)=>{
-  let {pid, uid}= req.params;
-  Product.findById(pid).then((product)=>{
-    User.findById(uid).then((user)=>{
-      res.render("order_confirmation.ejs", {product, user, activePage:" "})
-    }).catch((error)=>{console.log(error)})
-  }).catch((error1)=>{console.log(error1)})
-})
+app.get("/buyandsell/postlogin/customer/confirmation/buy/:pid", wrapAsync(async (req,res)=>{
+  const {pid}= req.params;
+  let uid=req.signedCookies.id;
+  const product = await Product.findById(pid);
+  const user = await User.findById(uid);
+  res.render("order_confirmation.ejs", {product, user, activePage:" "});
+}))
+
 //buy and save order
-app.get("/buyandsell/customer/buy/:pid/:uid", (req,res)=>{
-  let {uid, pid}= req.params;
-  Product.findById(pid).then((product)=>{
-    Product.updateOne({_id:pid}, {stock:product.stock-1, purchase: product.purchase+1}).then((result)=>{
-      let notification=new Notification({
-        senderId:uid,
-        receiverId:product.sellerId,
-        message:`You have an order for your product ${product.title}, Stock remains: ${product.stock-1}. Check your New orders section for more details.`
-      })
-      notification.save().then((r)=>{User.findByIdAndUpdate(product.sellerId, {isRead:false}).then((r)=>{
-//notifications
-// merchant
-User.findById(product.sellerId).then((seller)=>{
-    const email = seller.email;
-  const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+app.get("/buyandsell/postlogin/customer/buy/:pid", wrapAsync(async (req,res)=>{
+  const {pid}= req.params;
+  let uid=req.signedCookies.id;
+  const product = await Product.findById(pid);
+  
+  await Product.updateOne({_id:pid}, {stock:product.stock-1, purchase: product.purchase+1});
+  
+  const notification = new Notification({
+    senderId:uid,
+    receiverId:product.sellerId,
+    message:`You have an order for your product ${product.title}, Stock remains: ${product.stock-1}. Check your New orders section for more details.`
+  });
+  
+  await notification.save();
+  await User.findByIdAndUpdate(product.sellerId, {isRead:false});
 
-  req.session.email = email;
-  req.session.otp = otp;
-
+  //notifications for merchant
+  const seller = await User.findById(product.sellerId);
   const mailOptions = {
-    from: 'pravi5653no0987@gmail.com',
-    to: email,
+    from: process.env.GMAIL,
+    to: seller.email,
     subject: 'Order for your product',
     text: `Greetings Merchant,
-You’ve received a new order for your product: ${product.title}. To view the order details and manage it, please click the link https://buy-and-sell-project.onrender.com/ to visit our website.
+You've received a new order for your product: ${product.title}. To view the order details and manage it, please click the link https://buy-and-sell-project.onrender.com/ to visit our website.
 Warm regards,
-The B&S Team"
-`
+The B&S Team"`
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      return res.send('Error sending email');
-    }
+  await new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        reject(error);
+      }
+      resolve(info);
+    });
   });
+
   //customer
-  User.findById(uid).then((customer)=>{
-        const cemail = customer.email;
-  const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+  const customer = await User.findById(uid);
+  const cemail = customer.email;
 
-  req.session.email = email;
-  req.session.otp = otp;
-
-  const mailOptions = {
+  const mailOptions2 = {
     from: 'pravi5653no0987@gmail.com',
     to: cemail,
     subject: 'Order Confirmation',
     text: `Greetings Customer,
 Your order for product: ${product.title} has been placed. To view the order details and manage it, please click the link https://buy-and-sell-project.onrender.com/ to visit our website.
 Warm regards,
-The B&S Team"
-`
+The B&S Team"`
   };
-   transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      return res.send('Error sending email');
-    }
+  
+  await new Promise((resolve, reject) => {
+    transporter.sendMail(mailOptions2, (error, info) => {
+      if (error) {
+        reject(error);
+      }
+      resolve(info);
+    });
   });
 
-
-
-  }).catch((e)=>{})
-}).catch((e)=>{})
-//notifications
-        
-      }).catch((e)=>{})})
-      .catch((e)=>{})
-    }).catch((error)=>{console.log(error)})
-      let order= new Order({
+  const order = new Order({
     customerId: uid,
     amount: product.price,
     ordertitle: product.title,
@@ -492,126 +536,140 @@ The B&S Team"
     orderbrand: product.brand,
     orderdiscountedprice: product.priceafterdiscount,
     productId: pid,
-  })
- order.save().then(res.redirect("/buyandsell/customer/myorders/"+uid)).catch((error)=>{console.log(error)})
-  }).catch((error)=>{console.log(error)})
-})
-//cart
-app.get("/buyandsell/customer/addtocart/:pid/:uid", (req, res)=>{
-  let {pid, uid}=req.params;
-  Product.findById(pid).then((product)=>{
-    let cart= new Cart({
-      customerId: uid,
-      productId: pid,
-      productImage: product.imageurl,
-      productName: product.title,
-      productPrice: product.price
-      , discountedprice: product.priceafterdiscount,
-      brand: product.brand,
-      purchase: product.purchase
-    });
-    cart.save().then((result)=>{res.redirect("/buyandsell/customer/getcart/"+uid)}).catch((error)=>{console.log(error)})
-  }).catch((error1)=>{console.log(error1)})
+  });
   
-})
+  await order.save();
+  res.redirect("/buyandsell/postlogin/customer/myorders");
+}))
 
-app.get("/buyandsell/customer/getcart/:uid", (req,res)=>{
-  let {uid}=req.params;
-  // res.send(uid);
-  Cart.find({customerId : uid}).sort({ addedToCartAt: -1 }).then((products)=>{
-    console.log(products);
-    User.findById(uid).then((user)=>{res.render("cart.ejs", {products, user, activePage:"cart"})})
-    .catch((error1)=>{console.log(error1)})
-  }).catch((error)=>{console.log(error)})
-})
+//cart
+app.get("/buyandsell/postlogin/customer/addtocart/:pid", wrapAsync(async (req, res)=>{
+  const {pid}=req.params;
+  let uid=req.signedCookies.id;
+  const product = await Product.findById(pid);
+  
+  const cart = new Cart({
+    customerId: uid,
+    productId: pid,
+    productImage: product.imageurl,
+    productName: product.title,
+    productPrice: product.price,
+    discountedprice: product.priceafterdiscount,
+    brand: product.brand,
+    purchase: product.purchase
+  });
+  
+  const result = await cart.save();
+  res.redirect("/buyandsell/postlogin/customer/getcart");
+}))
+
+app.get("/buyandsell/postlogin/customer/getcart", wrapAsync(async (req,res)=>{
+  let uid=req.signedCookies.id;
+  const products = await Cart.find({customerId : uid}).sort({ addedToCartAt: -1 });
+  console.log(products);
+  const user = await User.findById(uid);
+  res.render("cart.ejs", {products, user, activePage:"cart"});
+}))
+
 //delete from cart
-app.get("/buyandsell/user/deletecart/:pid/:uid", (req,res)=>{
-  let {pid, uid}= req.params;
-  Cart.findByIdAndDelete(pid).then((result)=>{
-    res.redirect("/buyandsell/customer/getcart/"+uid);
-  }).catch((error)=>{console.log(error)})
-})
+app.get("/buyandsell/postlogin/customer/deletecart/:pid", wrapAsync(async (req,res)=>{
+  const {pid}= req.params;
+  let uid=req.signedCookies.id;
+  const result = await Cart.findByIdAndDelete(pid);
+  res.redirect("/buyandsell/postlogin/customer/getcart");
+}))
 
 //cancel order:
-app.get("/buyandsell/user/cancelorder_request/:pid/:uid", (req,res)=>{
-  let {pid, uid}=req.params;
-  Order.findOne({_id : pid}).then((order)=>{
-    console.log(order);
-     res.render("cancelorder.ejs", {pid, uid, activePage:" ", order}
+app.get("/buyandsell/postlogin/customer/cancelorder_request/:pid", wrapAsync(async (req,res)=>{
+  const {pid}=req.params;
+  let uid=req.signedCookies.id;
+  const order = await Order.findOne({_id : pid});
+  res.render("cancelorder.ejs", {pid, uid, activePage:" ", order});
+}))
 
-     );}).catch((error)=>{console.log(error)})
-
- 
-})
-app.post("/buyandsell/user/cancelorder/:pid/:uid", (req,res)=>{
-  let cancelReason=req.body.cancel_reason;
+app.post("/buyandsell/postlogin/customer/cancelorder/:pid", wrapAsync(async (req,res)=>{
+  const cancelReason=req.body.cancel_reason;
   if(!cancelReason) return res.send("Please provide a reason for cancellation");
 
-  let {pid, uid}=req.params;
-  Order.findByIdAndUpdate(pid, {status: "Canceled By Customer", cancel_reason: cancelReason}).then((result)=>{
-    Order.findById(pid).then((order)=>{
-      prodId=order.productId;
-      Product.findById(prodId).then((product)=>{
-        Product.findByIdAndUpdate(prodId, {stock:product.stock+1, purchase: product.purchase-1}).then((r1)=>{}).catch((e1)=>{})
-        
-        let notification= new Notification({
-          senderId:uid,
-          receiverId: product.sellerId,
-          message: `Order for your product "${order.ordertitle}" has been canceled by Customer with reason: "${cancelReason}`
-        })
-        notification.save().then((r)=>{
-          User.findByIdAndUpdate(product.sellerId, {isRead: false}).then((u)=>{
-            res.redirect("/buyandsell/customer/myorders/"+uid);
-          }).catch((e)=>{})
-        }).catch((e)=>{})
-      }).catch((error2)=>{console.log(error2)})
-    }).catch((error1)=>{console.log(error1)})
-}).catch((error)=>{console.log(error)})
-})
+  const {pid}=req.params;
+  let uid=req.signedCookies.id;
+  const result = await Order.findByIdAndUpdate(pid, {status: "Canceled By Customer", cancel_reason: cancelReason});
+  const order = await Order.findById(pid);
+  const prodId = order.productId;
+  const product = await Product.findById(prodId);
+  
+  await Product.findByIdAndUpdate(prodId, {stock:product.stock+1, purchase: product.purchase-1});
+  
+  const notification = new Notification({
+    senderId:uid,
+    receiverId: product.sellerId,
+    message: `Order for your product "${order.ordertitle}" has been canceled by Customer with reason: "${cancelReason}"`
+  });
+  
+  await notification.save();
+  await User.findByIdAndUpdate(product.sellerId, {isRead: false});
+  res.redirect("/buyandsell/postlogin/customer/myorders");
+}))
 
 //search
-app.post("/buyandsell/search/:uid", (req, res)=>{
-  let {uid}= req.params;
-  let {searchedProduct}= req.body;
-  searchedProduct?res.redirect(`/buyandsell/search/${uid}/${searchedProduct}`):res.redirect(`/buyandsell/search/${uid}/men`);
+app.post("/buyandsell/postlogin/search", wrapAsync(async (req, res)=>{
+  let uid=req.signedCookies.id;
+  const {searchedProduct}= req.body;
+  searchedProduct?res.redirect(`/buyandsell/postlogin/search/${searchedProduct}`):res.redirect(`/buyandsell/postlogin/search/men`);
+}))
+
+app.get("/buyandsell/postlogin/search/:searchedProduct", wrapAsync(async (req,res)=>{
+  const {searchedProduct}=req.params;
+  let uid=req.signedCookies.id;
+
+  const user = await User.findById(uid);
+  const products = await Product.find({
+    $or: [
+      { title: { $regex: searchedProduct, $options: 'i' } },
+      { tags: { $regex: searchedProduct, $options: 'i' } },
+      { description: { $regex: searchedProduct, $options: 'i' } }
+    ]
+  });
   
-})
+  res.render("search.ejs",{user, products, searchedProduct, activePage:searchedProduct});
+}))
 
-app.get("/buyandsell/search/:uid/:searchedProduct", (req,res)=>{
-  let {uid, searchedProduct}=req.params;
-
-  User.findById(uid).then((user)=>{
-    Product.find({
-  $or: [
-    { title: { $regex: searchedProduct, $options: 'i' } },
-    { tags: { $regex: searchedProduct, $options: 'i' } },
-    { description: { $regex: searchedProduct, $options: 'i' } }
-  ]
-}).then((products)=>{
-res.render("search.ejs",{user, products, searchedProduct, activePage:searchedProduct})
-}).catch((err)=>{console.log(err)})
-
-  }).catch((error)=>{console.log(error)})
-})
 //forgot password
-app.get("/buyandsell/password_recovery", (req,res)=>{
-  res.render("password_recovery.ejs", {activePage:" "});})
+app.get("/buyandsell/password_recovery", wrapAsync(async (req,res)=>{
+  res.render("password_recovery.ejs", {activePage:" "});
+}))
 
-  app.post("/buyandsell/password_recovery", (req,res)=>{
+app.post("/buyandsell/password_recovery", wrapAsync(async (req,res)=>{
+  const {femail,fpassword,pname}=req.body;
+  const user = await User.findOne({email:femail});
+  
+  if(!user){
+    res.send("User Not Registered");
+  }
+  else{
+    user.password=fpassword;
+    const result = await user.save();
+    res.cookie("id",result._id,{signed:true});
+    res.redirect("/buyandsell/postlogin/home");
+  }
+}))
 
-  let {femail,fpassword,pname}=req.body;
-  User.findOne({email:femail}).then((user)=>{
-    if(!user){res.send("User Not Registered")}
-    else{
-      user.password=fpassword;
-      user.save().then((result)=>{res.redirect("/buyandsell/home/"+result._id)}).catch((e)=>{res.send(e.errmsg);console.log(e)})
-    }
-  }).catch((error)=>{console.log(error); res.send(error)})
+// signout
+app.get("/buyandsell/postlogin/signout", wrapAsync(async (req,res)=>{
+  res.clearCookie("id");
+  res.redirect("/")
+}))
+
+//error handling middlewares
+app.use((req,res,next)=>{
+  next(new ExpressError(404, "Page Not Found"))
 });
 
+app.use((err, req, res, next)=>{
+  let {status=500, message="Something went wrong"}=err;
+  // user=req.signedCookies.user;
+  res.render("error.ejs", {status, message});
+});
 
-app.use((req,res)=>{
-    Product.find({}).then((products)=>{res.render("homepage.ejs", {products , activePage:"Home"})}).catch((error)=>{console.log(error)})
-})
 //routes end
 app.listen(3000, ()=>{console.log("Server started at 3000");});

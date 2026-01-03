@@ -20,7 +20,7 @@
     <p style="line-height: 14px;">City-State:  <span class="value"><%=user.city%> <%=user.contact.city%> - <%=user.contact.state%></span></p>
     <p style="line-height: 14px;">Pin: <span class="value"><%=user.city%> <b><%=user.contact.pincode%></b></span></p>
     <p style="line-height: 14px;">Contact: : <span class="value"><%=user.city%> <%=user.contact.phone%></span></p>
-    <a href="/buyandsell/updateprofile/<%=user.id%>"><button class="order-update" style="width: 100%; border-radius: 5px; border: 2px solid rgb(129, 151, 223); height: 40px;">Update Shipping details</button></a><hr>
+    <a href="/buyandsell/postlogin/updateprofile"><button class="order-update" style="width: 100%; border-radius: 5px; border: 2px solid rgb(129, 151, 223); height: 40px;">Update Shipping details</button></a><hr>
     <h5 style="text-align: center; color: blue;">Payment</h5><hr>
 
     <div class="form-check">
@@ -40,7 +40,7 @@
 <hr>
 
     
-    <a href="/buyandsell/customer/buy/<%=product._id%>/<%=user._id%>"><button class="order-confirm" style="margin-top: 10px; width: 100%; border-radius: 5px; border: 2px solid greenyellow; height: 40px;">Place an order</button></a>
+    <a href="/buyandsell/postlogin/customer/buy/<%=product._id%>"><button class="order-confirm" style="margin-top: 10px; width: 100%; border-radius: 5px; border: 2px solid greenyellow; height: 40px;">Place an order</button></a>
   </div>
 </div>
 </body>

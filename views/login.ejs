@@ -4,7 +4,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Password Recovery</title>
+  <title>Login</title>
 
   <style>
     body {
@@ -16,7 +16,7 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    .recovery-card {
+    .login-card {
       background: #ffffff;
       border-radius: 16px;
       padding: 30px 25px;
@@ -37,12 +37,12 @@
       }
     }
 
-    .recovery-card h3 {
+    .login-card h3 {
       font-weight: 700;
       color: #333;
     }
 
-    .recovery-card hr {
+    .login-card hr {
       margin: 15px 0 25px;
     }
 
@@ -54,20 +54,33 @@
     }
 
     .login-form-control:focus {
-      border-color: #ff9800;
-      box-shadow: 0 0 0 0.15rem rgba(255,152,0,0.25);
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 0.15rem rgba(26,115,232,0.25);
     }
 
-    .btn-update {
-      background: #ff9800;
+    .forgot-link {
+      display: block;
+      text-align: right;
+      font-size: 0.9rem;
+      text-decoration: none;
+      color: #1a73e8;
+      margin-bottom: 20px;
+    }
+
+    .forgot-link:hover {
+      text-decoration: underline;
+    }
+
+    .btn-login {
+      background: #1a73e8;
       color: #fff;
       font-weight: 600;
       border-radius: 30px;
       padding: 10px 26px;
     }
 
-    .btn-update:hover {
-      background: #fb8c00;
+    .btn-login:hover {
+      background: #1666cc;
     }
 
     .btn-signup {
@@ -86,18 +99,15 @@
 
 <body>
 
-  <div class="recovery-card">
-    <form method="POST" action="/buyandsell/password_recovery" class="text-center">
+  <div class="login-card">
+    <form id="main-div"
+          action="/buyandsell/login"
+          method="POST"
+          class="text-center">
 
-      <h3>Password Recovery</h3>
-      <p class="helper-text">Update your password securely</p>
+      <h3>Welcome Back</h3>
+      <p class="helper-text">Login to continue buying & selling</p>
       <hr>
-
-      <input class="form-control login-form-control mb-3"
-             type="text"
-             placeholder="Name"
-             name="fname"
-             required>
 
       <input class="form-control login-form-control mb-3"
              type="email"
@@ -105,20 +115,27 @@
              name="femail"
              required>
 
-      <input class="form-control login-form-control mb-4"
+      <input class="form-control login-form-control mb-2"
              type="password"
-             placeholder="New Password"
+             placeholder="Password"
              name="fpassword"
              required>
 
+      <a href="/buyandsell/password_recovery" class="forgot-link">
+        Forgot Password?
+      </a>
+
       <div class="d-flex justify-content-center gap-2">
-        <button type="submit" class="btn btn-update">Update</button>
-        <a href="/buyandsell/signup_gmail" class="btn btn-outline-success btn-signup">Sign Up</a>
+        <button type="submit" class="btn btn-login">
+          Login
+        </button>
+        <a href="/buyandsell/signup_gmail" class="btn btn-outline-success btn-signup">
+          Sign Up
+        </a>
       </div>
 
     </form>
   </div>
+
 </body>
 </html>
-
-

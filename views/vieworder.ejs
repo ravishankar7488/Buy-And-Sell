@@ -20,7 +20,7 @@
       ><b><%=order.status%></b></span></li>
 
        <li class="list-group-item">Status: 
-      <form method="POST" action="/buyandsell/merchant/vieworder/updatestatus/<%=user._id%>/<%=order._id%>/<%=customer._id%>">
+      <form method="POST" action="/buyandsell/postlogin/merchant/vieworder/updatestatus/<%=order._id%>/<%=customer._id%>">
         <select name="status" placeholder="<%=order.status%>">
           <option value="Order Placed">Order Placed</option>
           <option value="Confirmed">Confirmed</option>

@@ -28,7 +28,7 @@
 
     <p style="line-height: 11px;">Total Amount. <span class="value"><b>₹<%=order.orderdiscountedprice%></b></span></p><hr>
 
-    <form method="POST" action="/buyandsell/user/cancelorder/<%=pid%>/<%=uid%>">
+    <form method="POST" action="/buyandsell/postlogin/customer/cancelorder/<%=pid%>">
 
     <label style="text-align: center; " for="cancel_reason"><b>Reason for cancellation:</b></label><br>
     <input style="margin-top: 10px;" class="form-control login-form-control" id="cancel_reason" name="cancel_reason" placeholder="Enter your reason here..."></input><br>

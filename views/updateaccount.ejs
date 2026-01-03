@@ -1,61 +1,243 @@
 <% layout("../layouts/boilerplate")%>
 <body><br>
 
-  <form method="POST" action="/buyandsell/updateprofile/<%=user._id%>" enctype="multipart/form-data" class="row g-3">
-<div class="card mb-3" style="max-width: 840px;">
-  <div class="row g-0">
-    <div class="col-md-4">
-      <label for="formFile" class="form-label"><img src="<%=user.profileImage%>" class="img-fluid rounded-start" alt="Profile Image"></label>
-      <input type="file" name="profileImage" id="formFile" class="form-control">
-      <p>&nbsp;&nbsp;<i>Choose file to update profile picture.</i></p>
+  <form
+  method="POST"
+  action="/buyandsell/postlogin/updateprofile"
+  enctype="multipart/form-data"
+  class="update-profile-form"
+>
+  <div class="card update-card">
+    <div class="row g-0">
+
+      <!-- LEFT IMAGE SECTION -->
+      <div class="col-md-4 update-left">
+        <label for="formFile" class="profile-pic-label">
+          <img
+            src="<%=user.profileImage%>"
+            class="img-fluid update-profile-img"
+            alt="Profile Image"
+          />
+          <span class="change-photo">Change Photo</span>
+        </label>
+
+        <input
+          type="file"
+          name="profileImage"
+          id="formFile"
+          class="form-control mt-2"
+        />
+
+        <p class="hint-text">
+          Choose a new image to update your profile picture.
+        </p>
+      </div>
+
+      <!-- RIGHT FORM SECTION -->
+      <div class="col-md-8">
+        <div class="card-body update-body">
+
+          <div class="alert alert-info update-note">
+            <strong>Note:</strong>
+            Modify only the fields you want to update and enter your
+            <b>current password</b> to save changes.
+          </div>
+
+          <div class="row gy-3">
+
+            <div class="col-md-8">
+              <input type="text" class="form-control" placeholder="Full Name" name="fname">
+            </div>
+
+            <div class="col-md-8">
+              <input
+                type="email"
+                class="form-control readonly-field"
+                value="<%=user.email%>"
+                readonly
+              >
+            </div>
+
+            <div class="col-md-8">
+              <input type="text" class="form-control" placeholder="Phone Number" name="fphone">
+            </div>
+
+            <div class="col-md-8">
+              <input type="text" class="form-control" placeholder="Landmark / Locality" name="flandmark">
+            </div>
+
+            <div class="col-md-8">
+              <input type="text" class="form-control" placeholder="State" name="fstate">
+            </div>
+
+            <div class="col-md-8">
+              <input type="text" class="form-control" placeholder="Zip Code" name="fpin">
+            </div>
+
+            <div class="col-md-8">
+              <input type="text" class="form-control" placeholder="City" name="fcity">
+            </div>
+
+            <div class="col-md-8">
+              <input
+                type="password"
+                class="form-control password-field"
+                placeholder="Enter current password (required)"
+                name="foldpassword"
+                required
+              >
+            </div>
+
+            <div class="col-md-8">
+              <input
+                type="password"
+                class="form-control"
+                placeholder="New Password (optional)"
+                name="fnewpassword"
+              >
+            </div>
+
+          </div>
+        </div>
+      </div>
+
     </div>
-    <div class="col-md-8">
-      <div class="card-body">
-        
-        <p><b>Note: </b><i>Modify Only the fields you want to update and enter your current password to make changes.</i></p>
-        <div class="col-md-8">
-          <input type="text" class="form-control" placeholder="Name.." name="fname" >
-        </div>
+  </div>
 
-         <div class="col-md-8">
-          <input type="text" class="form-control" placeholder="<%=user.email%>" name="femail" readonly>
-        </div>
-
-         <div class="col-md-8">
-          <input type="text" class="form-control" placeholder="Phone.." name="fphone" >
-        </div>
-
-         <div class="col-md-8">
-          <input type="text" class="form-control" placeholder="Landmark.." name="flandmark" >
-        </div>
-
-         <div class="col-md-8">
-          <input type="text" class="form-control" placeholder="State.." name="fstate" >
-        </div>
-
-        <div class="col-md-8">
-          <input type="text" class="form-control" placeholder="Zip code.." name="fpin" >
-        </div>
-
-         <div class="col-md-8">
-          <input type="text" class="form-control" placeholder="City.." name="fcity" >
-        </div>
-
-        <div class="col-md-8">
-          <input type="password" class="form-control" placeholder="Enter password to make changes.." name="foldpassword">
-        </div>
-
-        <div class="col-md-8">
-          <input type="password" class="form-control" placeholder="New Password (In case)" name="fnewpassword">
-        </div>
-
-        <!-- <h6 class="card-title"><i><%=user.email%></i></h6>
-        <h6 class="card-title"><%=user.contact.phone%></h6><hr>
-        <p class="card-title"><%=user.contact.address%> - <%=user.contact.pincode%>,</p>
-        <p class="card-title"><%=user.contact.city%> - <%=user.contact.state%></p> -->
-       </div>
-       </div>
-       </div> 
-       <Button class="save-button">Save</Button>
+  <div class="text-center mt-4">
+    <button type="submit" class="btn save-button">
+      Save Changes
+    </button>
+  </div>
 </form>
+<style>
+  /* ===== UPDATE PROFILE FORM ===== */
+.update-profile-form {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 15px;
+}
+
+.update-card {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.18);
+  transition: transform 0.3s ease;
+}
+
+.update-card:hover {
+  transform: translateY(-4px);
+}
+
+/* LEFT SECTION */
+.update-left {
+  background: linear-gradient(145deg, #1f4037, #99f2c8);
+  text-align: center;
+  padding: 22px;
+  color: #fff;
+}
+
+.profile-pic-label {
+  position: relative;
+  cursor: pointer;
+  display: block;
+}
+
+.update-profile-img {
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 4px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+  transition: transform 0.3s ease;
+}
+
+.profile-pic-label:hover .update-profile-img {
+  transform: scale(1.04);
+}
+
+.change-photo {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+/* TEXT */
+.hint-text {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+/* RIGHT BODY */
+.update-body {
+  padding: 30px;
+  background: linear-gradient(180deg, #ffffff, #f6f9fc);
+}
+
+/* INFO NOTE */
+.update-note {
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+/* INPUTS */
+.update-body .form-control {
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+}
+
+.update-body .form-control:focus {
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.25);
+}
+
+/* READONLY */
+.readonly-field {
+  background-color: #f1f3f6;
+  cursor: not-allowed;
+}
+
+/* PASSWORD */
+.password-field {
+  border-left: 4px solid #dc3545;
+}
+
+/* SAVE BUTTON */
+.save-button {
+  background: linear-gradient(135deg, #1a73e8, #0f5ad6);
+  color: #fff;
+  padding: 10px 36px;
+  border-radius: 30px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.save-button:hover {
+  background: linear-gradient(135deg, #0f5ad6, #0845a5);
+  box-shadow: 0 10px 25px rgba(26, 115, 232, 0.45);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .update-profile-img {
+    max-height: 220px;
+  }
+
+  .update-body {
+    padding: 24px;
+  }
+
+  .save-button {
+    width: 100%;
+  }
+}
+
+</style>
 </body>

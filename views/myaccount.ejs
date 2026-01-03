@@ -1,42 +1,166 @@
 <% layout("../layouts/boilerplate")%>
 <body><br>
 
-<div class="card mb-3" style="max-width: 840px; margin-left: 10px;">
-  <div class="row g-0">
-    <div class="col-md-4" style="border: 1px solid green;">
-      <img src="<%=user.profileImage%>" class="img-fluid rounded-start" alt="Profile Image">
-      <div style="margin-top: 5px; margin-left: 5px;">
-        <%if((user.role==="customer")){%>
-              <br><p style="font-family: Gill Sans;">At <b>Buy & Sell</b>, we believe our customers are at the heart of everything we do. We're incredibly grateful for your trust and continued support, and we're committed to providing you with an exceptional experience every step of the way. your satisfaction is our greatest reward. Thank you for being a part of our community!</p>
+<div class="profile-wrapper">
+  <div class="card profile-card mb-4">
+    <div class="row g-0">
 
-        <%}%>
-        <%if(user.role==="merchant"){%>
-              <br><p style="font-family:Lucida Sans;">Dear <b>Merchants, </b>we extend our sincerest gratitude. You are the backbone of <b>Buy & Sell</b>, bringing a vibrant and diverse array of products to our platform. Your dedication to offering quality items and your trust in our service are what make this marketplace thrive. Thank you for choosing to grow your business with us and for enriching the shopping experience for all our customers. We are proud to partner with you!</p>
+      <!-- LEFT : IMAGE + MESSAGE -->
+      <div class="col-md-4 profile-left">
+        <img src="<%= user.profileImage %>" class="profile-img" alt="Profile Image">
 
-        <%}%>
+        <div class="profile-message">
+          <% if (user.role === "customer") { %>
+            <p>
+              At <b>Buy & Sell</b>, our customers are at the heart of everything we do.
+              Thank you for trusting us and being part of our growing community 💙
+            </p>
+          <% } %>
+
+          <% if (user.role === "merchant") { %>
+            <p>
+              Dear <b>Merchant</b>, you are the backbone of <b>Buy & Sell</b>.
+              Thank you for growing your business with us and empowering our marketplace 🚀
+            </p>
+          <% } %>
+        </div>
       </div>
-    </div>
-    <div class="col-md-8">
-      <div class="card-body">
-        
-        <a href="/buyandsell/updateprofile/<%=user._id%>"><svg class="edit-icon" xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
-  <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/></svg></a>
 
-        <br><h2 style="color: blue; font-family: Gill Sans; text-align: center;" class="card-title"><%=user.name%></h2><br><hr>
-        <h6 class="card-title"><i><%=user.email%></i></h6>
-        <h6 class="card-title"></b>Account Type: "<%=user.role%>"</h6>
-        <h6 class="card-title"><i><%=user.gender%></i></h6>
-        <h6 class="card-title"><%=user.contact.phone%></h6><hr>
-        <p class="card-title"><%=user.contact.address%> - <%=user.contact.pincode%>,</p>
-        <p class="card-title"><%=user.contact.city%> - <%=user.contact.state%></p>
-        <hr>
-        <p class="card-title"><b>Joined At:</b>&nbsp;<%=user.joinedAt%></p>
-        <a style="float: right;bottom: 20px; margin-left: 20px; border-radius: 10px;" href="/" class="card-link"><button>Sign Out👋</button></a>
+      <!-- RIGHT : DETAILS -->
+      <div class="col-md-8">
+        <div class="card-body profile-body">
 
-        
+          <!-- Edit Icon -->
+          <a href="/buyandsell/postlogin/updateprofile" class="edit-profile">
+            ✏️
+          </a>
 
+          <h2 class="profile-name"><%= user.name %></h2>
+          <p class="profile-email"><%= user.email %></p>
+
+          <hr>
+
+          <div class="profile-info">
+            <p><strong>Account Type:</strong> <span class="badge bg-info text-dark"><%= user.role %></span></p>
+            <p><strong>Gender:</strong> <%= user.gender %></p>
+            <p><strong>Phone:</strong> <%= user.contact.phone %></p>
+          </div>
+
+          <hr>
+
+          <div class="profile-address">
+            <p><strong>Address:</strong></p>
+            <p><%= user.contact.address %>, <%= user.contact.city %></p>
+            <p><%= user.contact.state %> - <%= user.contact.pincode %></p>
+          </div>
+
+          <hr>
+
+          <p class="joined">
+            <strong>Joined:</strong> <%= user.joinedAt %>
+          </p>
+
+          <a href="/buyandsell/postlogin/signout" class="btn btn-outline-danger logout-btn">
+            Sign Out 👋
+          </a>
+
+        </div>
       </div>
+
     </div>
   </div>
 </div>
+/* ===== PROFILE PAGE ===== */
+
+<style>
+  .profile-wrapper {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 0 15px;
+}
+
+.profile-card {
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+/* Left Section */
+.profile-left {
+  background: linear-gradient(180deg, #111, #222);
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+}
+
+.profile-img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 3px solid #fff;
+}
+
+.profile-message {
+  margin-top: 15px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Right Section */
+.profile-body {
+  padding: 30px;
+  position: relative;
+}
+
+.edit-profile {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  text-decoration: none;
+  font-size: 1.2rem;
+}
+
+.profile-name {
+  text-align: center;
+  font-weight: 700;
+  color: #1a73e8;
+}
+
+.profile-email {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+}
+
+.profile-info p,
+.profile-address p {
+  margin-bottom: 6px;
+}
+
+.joined {
+  color: #555;
+}
+
+.logout-btn {
+  float: right;
+  margin-top: 10px;
+  border-radius: 25px;
+  padding: 6px 18px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .profile-img {
+    max-height: 220px;
+  }
+
+  .logout-btn {
+    float: none;
+    width: 100%;
+    margin-top: 15px;
+  }
+}
+</style>
+
 </body>

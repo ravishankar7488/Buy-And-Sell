@@ -1,7 +1,6 @@
 <% layout("../layouts/boilerplate")%>
 <body>
-<hr>
-<h3>Your Cart</h3><hr>
+  <br>
   <div class="cards">
     <%products.forEach((product)=>{%>
     <br><br>
@@ -14,8 +13,8 @@
   </div>
 
   <div style="margin-top: -30px;" class="card-body">
-      <a href="/buyandsell/user/viewproduct/<%=product. productId%>/<%=user._id%>" class="card-link"><button>View</button></a>
-      <a href="/buyandsell/user/deletecart/<%=product._id%>/<%=user._id%>" class="card-link"><button>Remove</button></a>
+      <a href="/buyandsell/postlogin/user/viewproduct/<%=product. productId%>" class="card-link"><button>View</button></a>
+      <a href="/buyandsell/postlogin/customer/deletecart/<%=product._id%>" class="card-link"><button>Remove</button></a>
   </div>
 </div>
   <%})%>
