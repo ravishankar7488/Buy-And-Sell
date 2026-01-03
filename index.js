@@ -24,8 +24,13 @@ app.use(session({ secret: 'otp_secret', resave: false, saveUninitialized: true }
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
+<<<<<<< HEAD
     user: process.env.GMAIL,
     pass: process.env.PASS
+=======
+    user: 'pravi5653no0987@gmail.com',
+    pass: 'pulg nwuf jymn bwmv'
+>>>>>>> 6ccc03bd2882a46784d5ebb4f827d69714e3abd6
   }
 });
 
