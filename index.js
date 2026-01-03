@@ -22,11 +22,13 @@ app.use(session({ secret: 'otp_secret', resave: false, saveUninitialized: true }
 
 // Email transporter setup (use your Gmail credentials or app password)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // MUST be false
   auth: {
     user: process.env.GMAIL,
-    pass: process.env.PASS
-  }
+    pass: process.env.PASS,
+  },
 });
 
 const ExpressError= require("./utils/expressError.js");
