@@ -22,13 +22,11 @@ app.use(session({ secret: 'otp_secret', resave: false, saveUninitialized: true }
 
 // Email transporter setup (use your Gmail credentials or app password)
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // MUST be false
+  service: 'gmail',
   auth: {
     user: process.env.GMAIL,
-    pass: process.env.PASS,
-  },
+    pass: process.env.PASS
+  }
 });
 
 const ExpressError= require("./utils/expressError.js");
@@ -76,8 +74,11 @@ app.set("view engine", "ejs");
 
 //routes
 app.get("/", wrapAsync(async (req,res)=>{
-  const products = await Product.find({});
-  res.render("homepage.ejs", {products , activePage:"Home"});
+  id=req.signedCookies.id;
+  if(id)res.redirect("buyandsell/postlogin/home")
+  else {
+const products = await Product.find({});
+  res.render("homepage.ejs", {products , activePage:"Home"});}
 }))
 
 
@@ -199,7 +200,12 @@ app.post("/buyandsell/login", wrapAsync(async (req,res)=>{
   else{
     const pw=result.password;
     if(pw===fpassword){
-      res.cookie("id",result._id,{signed:true});
+      res.cookie("id",result._id,{
+        signed:true,
+        httpOnly:true,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    });
 
       res.redirect("/buyandsell/postlogin/home");
     }
@@ -245,6 +251,7 @@ app.post('/send-otp', wrapAsync(async (req, res) => {
 
   req.session.email = email;
   req.session.otp = otp;
+  req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes for otp expires
 
   const mailOptions = {
     from: process.env.GMAIL,
@@ -272,12 +279,12 @@ If you didn't request this, kindly ignore the message.`
 app.post('/verify-otp', wrapAsync(async (req, res) => {
   const email = req.params.email;
   const userOtp = req.body.otp;
-  if (parseInt(userOtp) === req.session.otp) {
+  if (parseInt(userOtp) === req.session.otp && Date.now() < req.session.otpExpiresAt) {
     setTimeout(() => {
       res.redirect('/buyandsell/signup/'+req.session.email);
     }, 1000);
   } else {
-    res.send('❌ Invalid OTP. Try again.');
+    res.send('Invalid OTP or OTP Expired. Try again.');
   }
 }));
 
@@ -311,7 +318,13 @@ app.post("/buyandsell/signup", upload.single('profileImage'), wrapAsync(async (r
     message: `Welcome ${result.name}! You are successfully registered on BUY & SELL as a ${result.role} 🙏`
   });
   await notification.save();
-  res.cookie("id",result._id,{signed:true});
+  res.cookie("id",result._id,{
+    signed:true,
+    httpOnly:true,
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000
+
+  });
   res.redirect("/buyandsell/postlogin/home");
 }))
 
@@ -651,7 +664,12 @@ app.post("/buyandsell/password_recovery", wrapAsync(async (req,res)=>{
   else{
     user.password=fpassword;
     const result = await user.save();
-    res.cookie("id",result._id,{signed:true});
+    res.cookie("id",result._id,{
+      signed:true,
+      httpOnly:true,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000
+      });
     res.redirect("/buyandsell/postlogin/home");
   }
 }))
