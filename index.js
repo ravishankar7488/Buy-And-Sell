@@ -5,20 +5,17 @@ app.use(method_override("_method"));
 app.use(express.urlencoded({extended:true}));
 const cookieParser=require("cookie-parser");
 require('dotenv').config();
+const bcrypt = require("bcrypt");
+
 
 const bodyParser = require('body-parser');
 const nodemailer = require('nodemailer');
 const session = require('express-session');
-const flash= require("connect-flash")
-const sessions=require("express-session");
-app.use(cookieParser("devil"));
+app.use(cookieParser(process.env.COOKIE_SECRET));
 
-//connect-flash
-app.use(sessions())
-app.use(flash())
 
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(session({ secret: 'otp_secret', resave: false, saveUninitialized: true }));
+app.use(session({ secret: process.env.OTP_SECRET, resave: false, saveUninitialized: true }));
 
 // Email transporter setup (use your Gmail credentials or app password)
 const transporter = nodemailer.createTransport({
@@ -74,7 +71,7 @@ app.set("view engine", "ejs");
 
 //routes
 app.get("/", wrapAsync(async (req,res)=>{
-  id=req.signedCookies.id;
+  let id=req.signedCookies.id;
   if(id)res.redirect("buyandsell/postlogin/home")
   else {
 const products = await Product.find({});
@@ -82,29 +79,33 @@ const products = await Product.find({});
 }))
 
 
-//Authenication Middlewares
+//Authenication Middleware
 app.use("/buyandsell/postlogin", wrapAsync( async(req,res,next)=>{
-  id=req.signedCookies.id;
+  let id=req.signedCookies.id;
+  if (!id) {
+  throw new ExpressError(401, "Please Login First 🤷‍♂️");
+}
   let result=await User.findById(id)
   if(result)next();
   else{
-    throw new ExpressError(500, "Please Login First 🤷‍♂️")
+    throw new ExpressError(401, "Please Login First 🤷‍♂️")
   }
 }))
+//Authorization Middleware
 app.use("/buyandsell/postlogin/merchant", wrapAsync( async(req,res,next)=>{
-  id=req.signedCookies.id;
+  let id=req.signedCookies.id;
   let result=await User.findById(id)
   if(result.role=="merchant")next();
   else{
-    throw new ExpressError(500, "ACCESS DENIED")
+    throw new ExpressError(403, "ACCESS DENIED")
   }
 }))
 app.use("/buyandsell/postlogin/customer", wrapAsync( async(req,res,next)=>{
-  id=req.signedCookies.id;
+  let id=req.signedCookies.id;
   let result=await User.findById(id)
   if(result.role=="customer")next();
   else{
-    throw new ExpressError(500, "ACCESS DENIED")
+    throw new ExpressError(403, "ACCESS DENIED")
   }
 }))
 
@@ -117,17 +118,18 @@ app.get("/buyandsell/postlogin/user", wrapAsync(async (req,res)=>{
 
 //update account
 app.get("/buyandsell/postlogin/updateprofile", wrapAsync(async (req,res)=>{
-  id=req.signedCookies.id;
+  let id=req.signedCookies.id;
   const user = await User.findById(id);
   res.render("updateaccount.ejs", {user, activePage:" "});
 }));
 
 app.post("/buyandsell/postlogin/updateprofile", upload.single('profileImage'), wrapAsync(async (req,res)=>{
-  id=req.signedCookies.id;
+  let id=req.signedCookies.id;
   const {fname, femail, fphone, flandmark, fpin, fstate, fcity, foldpassword, fnewpassword}= req.body;
   const user = await User.findById(id);
   
-  if(user.password !== foldpassword) {
+  const isOldPasswordCorrect = await bcrypt.compare(foldpassword, user.password);
+  if(!isOldPasswordCorrect) {
     return res.send("Old password is incorrect");
   }
   user.name = fname || user.name;
@@ -138,7 +140,7 @@ app.post("/buyandsell/postlogin/updateprofile", upload.single('profileImage'), w
   user.contact.state = fstate || user.contact.state;
   user.contact.city = fcity || user.contact.city;
   if(fnewpassword) {
-    user.password = fnewpassword;
+    user.password = await bcrypt.hash(fnewpassword, 10);
   }
   if(req.file) {
     user.profileImage = "/uploads/profileImages/" + req.file.originalname;
@@ -162,7 +164,7 @@ app.get("/buyandsell/postlogin/user/viewproduct/:pid", wrapAsync(async (req,res)
 // Add
 app.post("/buyandsell/postlogin/addcomment/:pid/:uname", wrapAsync(async (req, res)=>{
   const {pid, uname}=req.params;
-  uid=req.signedCookies.id;
+  let uid=req.signedCookies.id;
   const {comment}=req.body;
   console.log(uid+" "+pid+" "+comment)
   const review = new Review({
@@ -179,7 +181,7 @@ app.post("/buyandsell/postlogin/addcomment/:pid/:uname", wrapAsync(async (req, r
 //delete comment:
 app.delete(("/buyandsell/postlogin/deletecomment/:pid/:rid"), wrapAsync(async (req,res)=>{
   const {pid, rid}=req.params
-  uid=req.signedCookies.id;
+  let uid=req.signedCookies.id;
   const result = await Review.findByIdAndDelete(rid);
   console.log(result);
   res.redirect(`/buyandsell/postlogin/user/viewproduct/${pid}`);
@@ -198,8 +200,8 @@ app.post("/buyandsell/login", wrapAsync(async (req,res)=>{
     res.send("User Not Registered");
   }
   else{
-    const pw=result.password;
-    if(pw===fpassword){
+    const isMatch = await bcrypt.compare(fpassword, result.password);
+    if(isMatch){
       res.cookie("id",result._id,{
         signed:true,
         httpOnly:true,
@@ -277,10 +279,10 @@ If you didn't request this, kindly ignore the message.`
 
 // Handle OTP verification
 app.post('/verify-otp', wrapAsync(async (req, res) => {
-  const email = req.params.email;
   const userOtp = req.body.otp;
   if (parseInt(userOtp) === req.session.otp && Date.now() < req.session.otpExpiresAt) {
     setTimeout(() => {
+      req.session.otp = null;
       res.redirect('/buyandsell/signup/'+req.session.email);
     }, 1000);
   } else {
@@ -293,6 +295,7 @@ app.get("/buyandsell/signup_gmail", wrapAsync(async (req,res)=>{
 }));
 
 app.get("/buyandsell/signup/:email", wrapAsync(async (req,res)=>{
+  req.session.email = null;
   res.render("signup.ejs", {activePage:" ", email:req.params.email, alertMessage: 'Email verified! Please fill in the details to complete your registration.'});
 }))
 
@@ -300,12 +303,14 @@ app.post("/buyandsell/signup", upload.single('profileImage'), wrapAsync(async (r
   const {fname, femail, fpassword, frole, fphone, faddress, fpincode, fstate, fcity, fgender}= req.body;
   console.log(req.file)
   const profileImage = req.file ? "/uploads/profileImages/"+req.file.originalname : "/uploads/profileImages/default-profile.png";
+  const saltRounds = 10;
+  const hashedPassword = await bcrypt.hash(fpassword, saltRounds);
   const user = new User({
     profileImage: profileImage,
     gender: fgender,
     name:fname,
     email: femail,
-    password: fpassword,
+    password: hashedPassword,
     role: frole,
     contact: {state: fstate, city: fcity, pincode: fpincode, phone: fphone, address: faddress},
     created_at:new Date()
@@ -313,7 +318,7 @@ app.post("/buyandsell/signup", upload.single('profileImage'), wrapAsync(async (r
   
   const result = await user.save();
   const notification = new Notification({
-    senderId: '68806542c7dad51e899c51a9',
+    senderId: process.env.ADMIN_ID,
     receiverId: result._id,
     message: `Welcome ${result.name}! You are successfully registered on BUY & SELL as a ${result.role} 🙏`
   });
@@ -487,7 +492,7 @@ app.get("/buyandsell/postlogin/customer/buy/:pid", wrapAsync(async (req,res)=>{
   const {pid}= req.params;
   let uid=req.signedCookies.id;
   const product = await Product.findById(pid);
-  
+
   await Product.updateOne({_id:pid}, {stock:product.stock-1, purchase: product.purchase+1});
   
   const notification = new Notification({
@@ -525,7 +530,7 @@ The B&S Team"`
   const cemail = customer.email;
 
   const mailOptions2 = {
-    from: 'pravi5653no0987@gmail.com',
+    from: process.env.GMAIL,
     to: cemail,
     subject: 'Order Confirmation',
     text: `Greetings Customer,
@@ -662,7 +667,8 @@ app.post("/buyandsell/password_recovery", wrapAsync(async (req,res)=>{
     res.send("User Not Registered");
   }
   else{
-    user.password=fpassword;
+    const hashedPassword = await bcrypt.hash(fpassword, 10);
+    user.password=hashedPassword;
     const result = await user.save();
     res.cookie("id",result._id,{
       signed:true,
