@@ -206,6 +206,7 @@ app.post("/buyandsell/login", wrapAsync(async (req,res)=>{
         signed:true,
         httpOnly:true,
         sameSite: "strict",
+        secure:true,
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
 
@@ -327,6 +328,7 @@ app.post("/buyandsell/signup", upload.single('profileImage'), wrapAsync(async (r
     signed:true,
     httpOnly:true,
     sameSite: "strict",
+    secure:true,
     maxAge: 7 * 24 * 60 * 60 * 1000
 
   });
@@ -673,6 +675,7 @@ app.post("/buyandsell/password_recovery", wrapAsync(async (req,res)=>{
     res.cookie("id",result._id,{
       signed:true,
       httpOnly:true,
+      secure:true,
       sameSite: "strict",
       maxAge: 7 * 24 * 60 * 60 * 1000
       });
