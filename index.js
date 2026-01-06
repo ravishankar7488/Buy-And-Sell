@@ -6,6 +6,7 @@ app.use(express.urlencoded({extended:true}));
 const cookieParser=require("cookie-parser");
 require('dotenv').config();
 const bcrypt = require("bcrypt");
+// const SibApiV3Sdk = require("sib-api-v3-sdk");
 
 
 const bodyParser = require('body-parser');
@@ -18,13 +19,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({ secret: process.env.OTP_SECRET, resave: false, saveUninitialized: true }));
 
 // Email transporter setup (use your Gmail credentials or app password)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL,
-    pass: process.env.PASS
-  }
-});
+const SibApiV3Sdk = require("sib-api-v3-sdk");
+
+const brevoClient = SibApiV3Sdk.ApiClient.instance;
+brevoClient.authentications["api-key"].apiKey = process.env.PASS;
+const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 const ExpressError= require("./utils/expressError.js");
 const wrapAsync= require("./utils/wrapAsync.js")
@@ -254,49 +253,48 @@ app.post('/send-otp', wrapAsync(async (req, res) => {
 
   req.session.email = email;
   req.session.otp = otp;
-  req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes for otp expires
+  req.session.otpExpiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-  const mailOptions = {
-    from: process.env.GMAIL,
-    to: email,
-    subject: 'Verification OTP for B&S',
-    text: `Thank you for choosing Buy and Sell!
+  try {
+    await tranEmailApi.sendTransacEmail({
+      sender: {
+        email: process.env.GMAIL,
+        name: "Buy & Sell"
+      },
+      to: [{ email }],
+      subject: "Verification OTP for B&S",
+      textContent: `Thank you for choosing Buy and Sell!
 Your One-Time Password (OTP) is ${otp}. Please enter this code to verify your identity and proceed.
 This code will expire in 5 minutes.
 If you didn't request this, kindly ignore the message.`
-  };
+    });
 
-  // await new Promise((resolve, reject) => {
-  //   transporter.sendMail(mailOptions, (error, info) => {
-  //     if (error) {
-  //       reject(error);
-  //     }
-  //     resolve(info);
-  //   });
-  // });
-  try {
-  await transporter.sendMail(mailOptions);
-  console.log("Mail sent successfully");
-} catch (err) {
-  console.error("SendMail failed:", err);
-}
+    console.log("Mail sent successfully");
+  } catch (err) {
+    console.error("SendMail failed:", err);
+  }
 
-  
   res.render('verify');
 }));
+
 
 // Handle OTP verification
 app.post('/verify-otp', wrapAsync(async (req, res) => {
   const userOtp = req.body.otp;
-  if (parseInt(userOtp) === req.session.otp && Date.now() < req.session.otpExpiresAt) {
+
+  if (
+    parseInt(userOtp) === req.session.otp &&
+    Date.now() < req.session.otpExpiresAt
+  ) {
     setTimeout(() => {
       req.session.otp = null;
-      res.redirect('/buyandsell/signup/'+req.session.email);
+      res.redirect('/buyandsell/signup/' + req.session.email);
     }, 1000);
   } else {
     res.send('Invalid OTP or OTP Expired. Try again.');
   }
 }));
+
 
 app.get("/buyandsell/signup_gmail", wrapAsync(async (req,res)=>{
   res.render("signup_gmail.ejs", {activePage:" "});
@@ -397,53 +395,56 @@ app.get("/buyandsell/postlogin/merchant/vieworder/:cid/:oid", wrapAsync(async (r
   res.render("vieworder.ejs", {customer, order, user, activePage:" "});
 }))
 
-app.post("/buyandsell/postlogin/merchant/vieworder/updatestatus/:oid/:cid", wrapAsync(async (req,res)=>{
-  const {oid, cid}=req.params;
-  let uid=req.signedCookies.id;
-  const {status}=req.body;
-  
-  const result = await Order.findByIdAndUpdate(oid, {status: status, createdAt: new Date()});
-  const order = await Order.findById(oid);
-  
-  if(status==='Rejected'){
-    const product = await Product.findById(order.productId);
-    await Product.findByIdAndUpdate(product._id, {stock:product.stock+1, purchase: product.purchase-1});
-  }
-  
-  const notification = new Notification({
-    senderId:uid,
-    receiverId:cid,
-    message:`Your Order for product "${order.ordertitle}" has been "${status}"`
+//update order status
+app.post("/buyandsell/postlogin/merchant/vieworder/updatestatus/:oid/:cid", wrapAsync(async (req, res) => {
+  const { oid, cid } = req.params;
+  let uid = req.signedCookies.id;
+  const { status } = req.body;
+
+  await Order.findByIdAndUpdate(oid, {
+    status: status,
+    createdAt: new Date()
   });
-  
-  await notification.save();
-  await User.findByIdAndUpdate(cid, {isRead: false});
-  
-  //notification for customer on mail
-  const customer = await User.findById(cid);
-  const cemail = customer.email;
 
-  const mailOptions = {
-    from: process.env.GMAIL,
-    to: cemail,
-    subject: 'Order status update',
-    text: `Greetings Customer,
-The status of your order "${order.ordertitle}" has been updated as "${status}". To view the order details and manage it, please click the link https://buy-and-sell-project.onrender.com/ to visit our website.
-Warm regards,
-The B&S Team"`
-  };
+  const order = await Order.findById(oid);
 
-  await new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        reject(error);
-      }
-      resolve(info);
+  if (status === "Rejected") {
+    const product = await Product.findById(order.productId);
+    await Product.findByIdAndUpdate(product._id, {
+      stock: product.stock + 1,
+      purchase: product.purchase - 1
     });
+  }
+
+  const notification = new Notification({
+    senderId: uid,
+    receiverId: cid,
+    message: `Your Order for product "${order.ordertitle}" has been "${status}"`
+  });
+
+  await notification.save();
+  await User.findByIdAndUpdate(cid, { isRead: false });
+
+
+  // Email for customer
+  const customer = await User.findById(cid);
+
+  await tranEmailApi.sendTransacEmail({
+    sender: {
+      email: process.env.GMAIL,
+      name: "Buy & Sell"
+    },
+    to: [{ email: customer.email }],
+    subject: "Order status update",
+    textContent: `Greetings Customer,
+The status of your order "${order.ordertitle}" has been updated as "${status}". To view the order details and manage it, please click the link https://buy-and-sell-x9rv.onrender.com/ to visit our website.
+Warm regards,
+The B&S Team`
   });
 
   res.redirect("/buyandsell/postlogin/merchant/myorders");
-}))
+}));
+
 
 //my listed products
 app.get("/buyandsell/postlogin/merchant/myproducts", wrapAsync(async (req, res)=>{
@@ -497,66 +498,60 @@ app.get("/buyandsell/postlogin/customer/confirmation/buy/:pid", wrapAsync(async 
 }))
 
 //buy and save order
-app.get("/buyandsell/postlogin/customer/buy/:pid", wrapAsync(async (req,res)=>{
-  const {pid}= req.params;
-  let uid=req.signedCookies.id;
+app.get("/buyandsell/postlogin/customer/buy/:pid", wrapAsync(async (req, res) => {
+  const { pid } = req.params;
+  let uid = req.signedCookies.id;
+
   const product = await Product.findById(pid);
 
-  await Product.updateOne({_id:pid}, {stock:product.stock-1, purchase: product.purchase+1});
-  
+  await Product.updateOne(
+    { _id: pid },
+    { stock: product.stock - 1, purchase: product.purchase + 1 }
+  );
+
   const notification = new Notification({
-    senderId:uid,
-    receiverId:product.sellerId,
-    message:`You have an order for your product ${product.title}, Stock remains: ${product.stock-1}. Check your New orders section for more details.`
+    senderId: uid,
+    receiverId: product.sellerId,
+    message: `You have an order for your product ${product.title}, Stock remains: ${product.stock - 1}. Check your New orders section for more details.`
   });
-  
+
   await notification.save();
-  await User.findByIdAndUpdate(product.sellerId, {isRead:false});
+  await User.findByIdAndUpdate(product.sellerId, { isRead: false });
 
-  //notifications for merchant
+
+  // Email for Merchant
   const seller = await User.findById(product.sellerId);
-  const mailOptions = {
-    from: process.env.GMAIL,
-    to: seller.email,
-    subject: 'Order for your product',
-    text: `Greetings Merchant,
-You've received a new order for your product: ${product.title}. To view the order details and manage it, please click the link https://buy-and-sell-project.onrender.com/ to visit our website.
-Warm regards,
-The B&S Team"`
-  };
 
-  await new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        reject(error);
-      }
-      resolve(info);
-    });
+  await tranEmailApi.sendTransacEmail({
+    sender: {
+      email: process.env.GMAIL,
+      name: "Buy & Sell"
+    },
+    to: [{ email: seller.email }],
+    subject: "Order for your product",
+    textContent: `Greetings Merchant,
+You've received a new order for your product: ${product.title}. To view the order details and manage it, please click the link https://buy-and-sell-x9rv.onrender.com/ to visit our website.
+Warm regards,
+The B&S Team`
   });
 
-  //customer
+  //Email for Customer
   const customer = await User.findById(uid);
-  const cemail = customer.email;
 
-  const mailOptions2 = {
-    from: process.env.GMAIL,
-    to: cemail,
-    subject: 'Order Confirmation',
-    text: `Greetings Customer,
-Your order for product: ${product.title} has been placed. To view the order details and manage it, please click the link https://buy-and-sell-project.onrender.com/ to visit our website.
+  await tranEmailApi.sendTransacEmail({
+    sender: {
+      email: process.env.GMAIL,
+      name: "Buy & Sell"
+    },
+    to: [{ email: customer.email }],
+    subject: "Order Confirmation",
+    textContent: `Greetings Customer,
+Your order for product: ${product.title} has been placed. To view the order details and manage it, please click the link https://buy-and-sell-x9rv.onrender.com/ to visit our website.
 Warm regards,
-The B&S Team"`
-  };
-  
-  await new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions2, (error, info) => {
-      if (error) {
-        reject(error);
-      }
-      resolve(info);
-    });
+The B&S Team`
   });
 
+  //Order save
   const order = new Order({
     customerId: uid,
     amount: product.price,
@@ -564,12 +559,13 @@ The B&S Team"`
     orderimage: product.imageurl,
     orderbrand: product.brand,
     orderdiscountedprice: product.priceafterdiscount,
-    productId: pid,
+    productId: pid
   });
-  
+
   await order.save();
+
   res.redirect("/buyandsell/postlogin/customer/myorders");
-}))
+}));
 
 //cart
 app.get("/buyandsell/postlogin/customer/addtocart/:pid", wrapAsync(async (req, res)=>{
