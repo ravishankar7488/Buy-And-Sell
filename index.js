@@ -266,14 +266,21 @@ This code will expire in 5 minutes.
 If you didn't request this, kindly ignore the message.`
   };
 
-  await new Promise((resolve, reject) => {
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        reject(error);
-      }
-      resolve(info);
-    });
-  });
+  // await new Promise((resolve, reject) => {
+  //   transporter.sendMail(mailOptions, (error, info) => {
+  //     if (error) {
+  //       reject(error);
+  //     }
+  //     resolve(info);
+  //   });
+  // });
+  try {
+  await transporter.sendMail(mailOptions);
+  console.log("Mail sent successfully");
+} catch (err) {
+  console.error("SendMail failed:", err);
+}
+
   
   res.render('verify');
 }));
