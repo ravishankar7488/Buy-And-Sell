@@ -3,44 +3,26 @@ const app=express();
 const method_override=require("method-override")
 app.use(method_override("_method"));
 app.use(express.urlencoded({extended:true}));
+const { cloudinary, upload } = require("./config.js");
 const cookieParser=require("cookie-parser");
 require('dotenv').config();
 const bcrypt = require("bcrypt");
-// const SibApiV3Sdk = require("sib-api-v3-sdk");
+const ExpressError= require("./utils/expressError.js");
+const wrapAsync= require("./utils/wrapAsync.js")
 
-
-const bodyParser = require('body-parser');
-const nodemailer = require('nodemailer');
 const session = require('express-session');
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
-
-app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({ secret: process.env.OTP_SECRET, resave: false, saveUninitialized: true }));
 
 // Email transporter setup (use your Gmail credentials or app password)
 const SibApiV3Sdk = require("sib-api-v3-sdk");
-
 const brevoClient = SibApiV3Sdk.ApiClient.instance;
 brevoClient.authentications["api-key"].apiKey = process.env.PASS;
 const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
-const ExpressError= require("./utils/expressError.js");
-const wrapAsync= require("./utils/wrapAsync.js")
 
-const multer  = require('multer')
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    console.log(req.body)
-    if(file.fieldname==="profileImage"){cb(null, './public/uploads/profileImages')}
-    else{cb(null, './public/uploads/productImages')}
-  },
-  filename: function (req, file, cb) {
-    const fn=file.originalname;
-    cb(null, fn)
-  }
-})
-const upload = multer({ storage: storage })
+
 
 const mongoose = require('mongoose');//db setup
 main().then(()=>{
@@ -126,11 +108,27 @@ app.post("/buyandsell/postlogin/updateprofile", upload.single('profileImage'), w
   let id=req.signedCookies.id;
   const {fname, femail, fphone, flandmark, fpin, fstate, fcity, foldpassword, fnewpassword}= req.body;
   const user = await User.findById(id);
-  
+
+  let imgurl;
+  if (req.file) {
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "buyandsell" },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+    imgurl=result.secure_url;
+      }
+      
   const isOldPasswordCorrect = await bcrypt.compare(foldpassword, user.password);
   if(!isOldPasswordCorrect) {
     return res.send("Old password is incorrect");
   }
+
   user.name = fname || user.name;
   user.email = femail || user.email;
   user.contact.phone = fphone || user.contact.phone;
@@ -138,11 +136,10 @@ app.post("/buyandsell/postlogin/updateprofile", upload.single('profileImage'), w
   user.contact.pincode = fpin || user.contact.pincode;
   user.contact.state = fstate || user.contact.state;
   user.contact.city = fcity || user.contact.city;
+  user.profileImage = imgurl || user.profileImage;
+
   if(fnewpassword) {
     user.password = await bcrypt.hash(fnewpassword, 10);
-  }
-  if(req.file) {
-    user.profileImage = "/uploads/profileImages/" + req.file.originalname;
   }
   
   const result = await user.save();
@@ -306,13 +303,30 @@ app.get("/buyandsell/signup/:email", wrapAsync(async (req,res)=>{
 }))
 
 app.post("/buyandsell/signup", upload.single('profileImage'), wrapAsync(async (req,res)=>{
-  const {fname, femail, fpassword, frole, fphone, faddress, fpincode, fstate, fcity, fgender}= req.body;
-  console.log(req.file)
-  const profileImage = req.file ? "/uploads/profileImages/"+req.file.originalname : "/uploads/profileImages/default-profile.png";
+const {fname, femail, fpassword, frole, fphone, faddress, fpincode, fstate, fcity, fgender}= req.body;
+
+  let imgurl;
+  if (req.file) {
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "buyandsell" },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+    imgurl=result.secure_url;
+      }
+      else{
+        imgurl="/uploads/profileImages/default-profile.png";
+      }
+
   const saltRounds = 10;
   const hashedPassword = await bcrypt.hash(fpassword, saltRounds);
   const user = new User({
-    profileImage: profileImage,
+    profileImage: imgurl,
     gender: fgender,
     name:fname,
     email: femail,
@@ -348,9 +362,23 @@ app.get("/buyandsell/postlogin/merchant/addproduct", wrapAsync(async (req,res)=>
   res.render("addproduct.ejs", {user, activePage:"addproductmerchant"});
 }))
 
-app.post("/buyandsell/postlogin/merchant/addproduct", wrapAsync(async (req,res)=>{
+app.post("/buyandsell/postlogin/merchant/addproduct",upload.single("productimage"), wrapAsync(async (req,res)=>{
   let id=req.signedCookies.id;
-  const {fbrand, ftitle, fimageurl, fdescription, fstock, fprice, fdiscountedprice, ftags}=req.body;
+  let imgurl;
+  if (req.file) {
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "buyandsell" },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+    imgurl=result.secure_url;
+      }
+  const {fbrand, ftitle, fdescription, fstock, fprice, fdiscountedprice, ftags}=req.body;
   const tagsArray = ftags.split(',').map(tag => tag.trim());
   const product = new Product({
     brand: fbrand,
@@ -358,13 +386,13 @@ app.post("/buyandsell/postlogin/merchant/addproduct", wrapAsync(async (req,res)=
     description: fdescription,
     price: fprice,
     priceafterdiscount: fdiscountedprice,
-    imageurl: fimageurl,
+    imageurl: imgurl,
     stock: fstock,
     createdAt:new Date(),
     sellerId:id,
     tags:tagsArray
   });
-  const result = await product.save();
+  const saveresult = await product.save();
   res.redirect("/buyandsell/postlogin/home");
 }))
 
@@ -705,3 +733,23 @@ app.use((err, req, res, next)=>{
 
 //routes end
 app.listen(3000, ()=>{console.log("Server started at 3000");});
+
+
+
+
+// app.post("/",upload.single("image"),async(req,res)=>{    // Upload to Cloudinary if user provided an image
+//   if (req.file) {
+//     const result = await new Promise((resolve, reject) => {
+//       const stream = cloudinary.uploader.upload_stream(
+//         { folder: "buyandsell" },
+//         (error, result) => {
+//           if (error) reject(error);
+//           else resolve(result);
+//         }
+//       );
+//       stream.end(req.file.buffer);
+//     });
+//     profileImageUrl = result.secure_url; // <-- store this in MongoDB
+//     res.send(profileImageUrl);
+//   }
+// })

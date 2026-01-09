@@ -64,9 +64,9 @@
 
 <body>
   <div class="form-container">
-    <h3>🛒 List Your Product</h3>
+    <h3> List Your Product</h3>
 
-    <form method="POST" action="/buyandsell/postlogin/merchant/addproduct">
+    <form method="POST" action="/buyandsell/postlogin/merchant/addproduct" enctype="multipart/form-data">
       
       <div class="form-group">
         <input name="fbrand" placeholder="Brand" required>
@@ -89,7 +89,7 @@
       </div>
 
       <div class="form-group">
-        <input name="fimageurl" placeholder="Image URL">
+        <input type="file" name="productimage" placeholder="Image URL">
       </div>
 
       <div class="form-group">
