@@ -139,7 +139,7 @@ width: 24rem !important;
   margin: auto;
   display: flex;
   flex-wrap: wrap;
-  justify-content: space evenly;
+  justify-content: space-evenly;
 }
 
 .card-img, .card-img-bottom, .card-img-top{
